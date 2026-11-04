@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- sudo cp usbshare /usr/local/bin/ && sudo cp de.usbshare.server.plist /Library/LaunchDaemons/
+     sudo mkdir -p /usr/local/etc/usbshare && sudo cp usbshare.example.toml /usr/local/etc/usbshare/usbshare.toml
+     sudo launchctl bootstrap system /Library/LaunchDaemons/de.usbshare.server.plist -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>de.usbshare.server</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/usbshare</string>
+    <string>serve</string>
+    <string>--config</string>
+    <string>/usr/local/etc/usbshare/usbshare.toml</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/var/log/usbshare.log</string>
+  <key>StandardErrorPath</key><string>/var/log/usbshare.log</string>
+</dict>
+</plist>

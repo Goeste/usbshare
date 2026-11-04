@@ -1,0 +1,15 @@
+[Unit]
+Description=usbshare: USB-Geräte vom Netzwerk automatisch einbinden
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=-/sbin/modprobe vhci-hcd
+ExecStart=/usr/local/bin/usbshare-attach.sh
+ExecStopPost=/usr/local/bin/usbshare-attach.sh stop
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

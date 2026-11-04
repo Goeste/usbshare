@@ -1,0 +1,16 @@
+# Server (Rechner mit den USB-Geräten)
+# sudo cp usbshare /usr/local/bin/ && sudo cp usbshare.service /etc/systemd/system/
+# sudo mkdir -p /etc/usbshare && sudo cp usbshare.example.toml /etc/usbshare/usbshare.toml
+# sudo systemctl enable --now usbshare
+[Unit]
+Description=usbshare USB/IP server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/usbshare serve --config /etc/usbshare/usbshare.toml
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

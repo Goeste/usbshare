@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: libusb
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0
+      - name: Abhängigkeiten
+        run: pip install libusb1 pyflakes
+      - name: Lint
+        run: python -m pyflakes usbshare tests packaging build.py client_gui.py server_gui.py
+      - name: Tests
+        run: python -m unittest discover -s tests -t . -v
+
+  windows-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install libusb1 sv-ttk pillow pystray
+      - name: Module laden
+        run: |
+          python -c "import usbshare.gui, usbshare.server_gui, usbshare.libusb_backend; print('ok')"
+          python -m usbshare --version

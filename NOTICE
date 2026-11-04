@@ -1,0 +1,34 @@
+usbshare – USB-Geräte über das Netzwerk durchreichen
+Copyright (C) 2026 Goeste
+
+Dieses Programm ist freie Software: Sie können es unter den Bedingungen der GNU General
+Public License, wie von der Free Software Foundation veröffentlicht, weitergeben und/oder
+modifizieren, entweder gemäß Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+Version. Der vollständige Lizenztext steht in der Datei LICENSE.
+
+Dieses Programm wird in der Hoffnung bereitgestellt, dass es nützlich ist, aber OHNE JEDE
+GEWÄHRLEISTUNG; sogar ohne die implizite Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR
+EINEN BESTIMMTEN ZWECK.
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+-------------------------------------------------------------------------------
+Zusätzliche Bedingung gemäß Abschnitt 7 Buchstabe b) der GNU GPL Version 3
+(Additional term pursuant to section 7(b) of the GNU GPL version 3)
+-------------------------------------------------------------------------------
+
+Wer dieses Programm oder ein darauf beruhendes Werk weitergibt, muss den ursprünglichen
+Autor in angemessener Form nennen, und zwar mit dem Hinweis
+
+    "Basiert auf usbshare von Goeste (https://github.com/Goeste/usbshare)"
+
+  a) in der README bzw. der Hauptdokumentation des weitergegebenen Werks und
+  b) – sofern das Werk eine grafische Oberfläche mit Info-/„Über“-Anzeige hat – in dieser
+     Anzeige.
+
+Copyright-Hinweise in den Quelldateien und diese Datei NOTICE dürfen nicht entfernt werden.
+
+English: Anyone conveying this program or a work based on it must preserve the author
+attribution "Based on usbshare by Goeste (https://github.com/Goeste/usbshare)" in the README or main
+documentation and, if the work has a graphical "About" display, in that display.
+Copyright notices in the source files and this NOTICE file must not be removed.

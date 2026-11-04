@@ -1,0 +1,5 @@
+* text=auto eol=lf
+# Windows-Skripte: CRLF und UTF-8 mit BOM (Windows PowerShell 5.1) unverändert lassen
+*.ps1 -text
+*.bat -text
+*.png binary

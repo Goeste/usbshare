@@ -1,0 +1,5 @@
+# Optional: usbshare ohne root betreiben. Gibt der Gruppe "usbshare" Zugriff auf USB-Geräte.
+# sudo groupadd -f usbshare && sudo usermod -aG usbshare $USER
+# sudo cp 99-usbshare.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger
+# Auf bestimmte Geräte einschränken: ATTR{idVendor}=="046d", ATTR{idProduct}=="c52b" ergänzen.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", MODE="0660", GROUP="usbshare"

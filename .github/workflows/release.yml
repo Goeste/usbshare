@@ -1,0 +1,132 @@
+name: Build & Release
+
+# Baut alle Programme und die Download-Pakete.
+#  - Tag "v*" pushen (z. B. v0.4.3): baut alles und veröffentlicht ein GitHub-Release
+#    mit dem passenden Abschnitt aus CHANGELOG.md.
+#  - "Run workflow" (manuell): baut alles, die Pakete liegen als Artefakte am Workflow-Lauf.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    # ältere Basis = läuft auch auf älteren Distributionen (glibc 2.35+, z. B. Debian 12)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: System-Pakete
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0 libtk8.6 libtcl8.6
+      - name: Python-Pakete
+        run: pip install pyinstaller libusb1 sv-ttk pillow
+      - name: Tests
+        run: python -m unittest discover -s tests -t .
+      - name: Bauen
+        run: |
+          python build.py
+          mv dist/usbshare dist/usbshare-linux-x86_64
+          dist/usbshare-linux-x86_64 --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-linux
+          path: dist/usbshare-linux-x86_64
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python-Pakete
+        run: pip install pyinstaller libusb1 sv-ttk pillow pystray
+      - name: Bauen
+        run: |
+          python build.py
+          python build.py gui
+          python build.py server-gui
+          dist\usbshare.exe --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-windows
+          path: |
+            dist/usbshare.exe
+            dist/usbshare-client.exe
+            dist/usbshare-server-gui.exe
+
+  macos:
+    # experimentell: Server für macOS (Apple Silicon), nicht Teil der Pakete
+    runs-on: macos-14
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: brew install libusb
+      - run: pip install pyinstaller libusb1 sv-ttk pillow
+      - name: Bauen
+        run: |
+          python build.py
+          mv dist/usbshare dist/usbshare-macos-arm64
+          dist/usbshare-macos-arm64 --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-macos
+          path: dist/usbshare-macos-arm64
+
+  package:
+    needs: [linux, windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          path: bins
+          merge-multiple: true
+      - name: Version bestimmen
+        id: ver
+        run: |
+          V=$(python -c "import re;print(re.search(r'__version__ = \"(.+?)\"', open('usbshare/__init__.py').read()).group(1))")
+          if [[ "$GITHUB_REF" == refs/tags/v* && "${GITHUB_REF#refs/tags/v}" != "$V" ]]; then
+            echo "::error::Tag ${GITHUB_REF#refs/tags/} passt nicht zu __version__ $V"; exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+      - name: Pakete schnüren
+        run: |
+          ls -la bins
+          python packaging/make_packages.py --version ${{ steps.ver.outputs.version }} --bins bins --out out
+          ls -la out
+      - name: Release-Text aus CHANGELOG.md
+        run: |
+          python - <<'EOF'
+          import re
+          v = "${{ steps.ver.outputs.version }}"
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          m = re.search(r"^## \[" + re.escape(v) + r"\].*?\n(.*?)(?=^## \[|\Z)", text, re.S | re.M)
+          body = (m.group(1).strip() if m else "Siehe CHANGELOG.md") + (
+              "\n\n**Downloads:** `usbshare-server-…zip` für den Rechner mit den USB-Geräten "
+              "(Linux + Windows), `usbshare-client-…-windows.zip` für die Windows-VM.")
+          open("release-notes.md", "w", encoding="utf-8").write(body)
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: usbshare-${{ steps.ver.outputs.version }}-pakete
+          path: out/*.zip
+      - name: GitHub-Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: usbshare ${{ steps.ver.outputs.version }}
+          body_path: release-notes.md
+          files: out/*.zip
