@@ -14,8 +14,39 @@ mit Fenster, Serverliste und automatischem Verbinden.
    (Installer `USBip-x.x.x-x64.exe` herunterladen und ausführen).
 2. `usbshare-client.exe` an einen festen Ort kopieren, z. B. `C:\Program Files\usbshare\`.
 3. Starten. Windows fragt nach Administratorrechten – die braucht usbip-win2 zum
-   Einbinden von Geräten. SmartScreen warnt beim ersten Start, weil die Datei nicht
-   signiert ist: „Weitere Informationen“ → „Trotzdem ausführen“.
+   Einbinden von Geräten. Beim ersten Start warnt Windows, weil die Datei **nicht
+   signiert** ist – siehe „Windows-Warnung“ unten.
+
+## Windows-Warnung: Die Programme sind nicht signiert
+
+Die `.exe`-Dateien sind **nicht digital signiert** (es gibt noch kein Code-Signing-
+Zertifikat). Windows zeigt deshalb beim ersten Start eine Warnung von **Microsoft Defender
+SmartScreen** („Der Computer wurde durch Windows geschützt“) und bei der Rechteabfrage
+„Unbekannter Herausgeber“ an. Das ist bei nicht signierten Programmen normal und kein
+Hinweis auf Schadsoftware.
+
+**So startest du die Programme trotzdem:**
+
+- **Im Warnfenster:** auf **„Weitere Informationen“** klicken, dann **„Trotzdem
+  ausführen“**. Windows merkt sich das für diese Datei.
+- **Oder vor dem Entpacken freigeben** (gilt dann für alle Dateien): Rechtsklick auf die
+  heruntergeladene ZIP → **Eigenschaften** → unten **„Zulassen“** anhaken → OK, erst dann
+  entpacken. Alternativ im entpackten Ordner in PowerShell:
+  `Get-ChildItem -Recurse | Unblock-File`
+- **Kein „Trotzdem ausführen“?** Dann ist wahrscheinlich **Smart App Control** aktiv
+  (häufig bei neu installiertem Windows 11), das nicht signierte Programme komplett
+  blockiert. Die Freigabe über „Zulassen“ hilft meist; sonst Windows-Sicherheit →
+  App- & Browsersteuerung → Smart App Control. Achtung: Je nach Windows-Version lässt es
+  sich danach nicht ohne Weiteres wieder einschalten.
+
+**Woher weiß ich, dass die Datei sauber ist?** Die Release-Dateien werden ausschließlich
+von GitHub Actions aus genau diesem Quellcode gebaut – nachvollziehbar unter
+[Actions](https://github.com/Goeste/usbshare/actions). Wer ganz sicher gehen will, baut
+die Programme selbst (Anleitung in der README unter https://github.com/Goeste/usbshare). Meldet
+ein Virenscanner die Datei (PyInstaller-Programme werden gelegentlich fälschlich
+erkannt), bitte ein [Issue](https://github.com/Goeste/usbshare/issues) anlegen.
+
+Eine Signierung (über die SignPath Foundation für Open-Source-Projekte) ist geplant.
 
 ## Bedienung
 

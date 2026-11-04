@@ -44,6 +44,37 @@ Fertige Pakete gibt es unter **[Releases](../../releases)**:
 Die Anleitungen liegen als `LIESMICH.md` in den Paketen
 ([Server](packaging/server/LIESMICH.md), [Client](packaging/client/LIESMICH.md)).
 
+## Windows-Warnung: Die Programme sind nicht signiert
+
+Die `.exe`-Dateien sind **nicht digital signiert** (es gibt noch kein Code-Signing-
+Zertifikat). Windows zeigt deshalb beim ersten Start eine Warnung von **Microsoft Defender
+SmartScreen** („Der Computer wurde durch Windows geschützt“) und bei der Rechteabfrage
+„Unbekannter Herausgeber“ an. Das ist bei nicht signierten Programmen normal und kein
+Hinweis auf Schadsoftware.
+
+**So startest du die Programme trotzdem:**
+
+- **Im Warnfenster:** auf **„Weitere Informationen“** klicken, dann **„Trotzdem
+  ausführen“**. Windows merkt sich das für diese Datei.
+- **Oder vor dem Entpacken freigeben** (gilt dann für alle Dateien): Rechtsklick auf die
+  heruntergeladene ZIP → **Eigenschaften** → unten **„Zulassen“** anhaken → OK, erst dann
+  entpacken. Alternativ im entpackten Ordner in PowerShell:
+  `Get-ChildItem -Recurse | Unblock-File`
+- **Kein „Trotzdem ausführen“?** Dann ist wahrscheinlich **Smart App Control** aktiv
+  (häufig bei neu installiertem Windows 11), das nicht signierte Programme komplett
+  blockiert. Die Freigabe über „Zulassen“ hilft meist; sonst Windows-Sicherheit →
+  App- & Browsersteuerung → Smart App Control. Achtung: Je nach Windows-Version lässt es
+  sich danach nicht ohne Weiteres wieder einschalten.
+
+**Woher weiß ich, dass die Datei sauber ist?** Die Release-Dateien werden ausschließlich
+von GitHub Actions aus genau diesem Quellcode gebaut – nachvollziehbar unter
+[Actions](https://github.com/Goeste/usbshare/actions). Wer ganz sicher gehen will, baut
+die Programme selbst (siehe „Aus dem Quellcode starten und bauen“ in der README). Meldet
+ein Virenscanner die Datei (PyInstaller-Programme werden gelegentlich fälschlich
+erkannt), bitte ein [Issue](https://github.com/Goeste/usbshare/issues) anlegen.
+
+Eine Signierung (über die SignPath Foundation für Open-Source-Projekte) ist geplant.
+
 ## Kurzanleitung
 
 **Server unter Linux**
@@ -63,8 +94,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 ```
 
 **Client (Windows-VM)** – [usbip-win2](https://github.com/vadimgrn/usbip-win2/releases)
-installieren, `usbshare-client.exe` starten, „Server suchen“. Die VM muss im selben
-Netzwerk wie der Server sein (Netzwerkkarte gebrückt, nicht NAT).
+installieren, `usbshare-client.exe` starten (Windows-Warnung siehe oben), „Server suchen“.
+Die VM muss im selben Netzwerk wie der Server sein (Netzwerkkarte gebrückt, nicht NAT).
 
 ## Aus dem Quellcode starten und bauen
 

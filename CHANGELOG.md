@@ -6,6 +6,10 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+### Dokumentation
+- Hinweis in README, Paket-Anleitungen und Release-Text: Die Windows-Programme sind nicht
+  signiert; Erklärung der SmartScreen-Warnung und wie man die Programme trotzdem startet.
+
 ## [0.4.4] – 2026-11-04
 
 ### Hinzugefügt

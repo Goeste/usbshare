@@ -136,7 +136,12 @@ jobs:
           m = re.search(r"^## \[" + re.escape(v) + r"\].*?\n(.*?)(?=^## \[|\Z)", text, re.S | re.M)
           body = (m.group(1).strip() if m else "Siehe CHANGELOG.md") + (
               "\n\n**Downloads:** `usbshare-server-…zip` für den Rechner mit den USB-Geräten "
-              "(Linux + Windows), `usbshare-client-…-windows.zip` für die Windows-VM.")
+              "(Linux + Windows), `usbshare-client-…-windows.zip` für die Windows-VM.\n\n"
+              "**Hinweis:** Die Windows-Programme sind **nicht signiert**. Windows SmartScreen "
+              "warnt deshalb beim ersten Start – „Weitere Informationen“ → „Trotzdem ausführen“, "
+              "oder die ZIP vor dem Entpacken unter Eigenschaften → „Zulassen“ freigeben. "
+              "Details: [README](https://github.com/Goeste/usbshare#windows-warnung-die-programme-sind-nicht-signiert). "
+              "Der Code wurde von Claude (KI) erstellt und kann Fehler enthalten.")
           open("release-notes.md", "w", encoding="utf-8").write(body)
           EOF
       - uses: actions/upload-artifact@v4
