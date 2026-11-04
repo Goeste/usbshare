@@ -5,6 +5,13 @@ Alternative zu VirtualHere. Der Server läuft auf dem Rechner, an dem die Gerät
 (Linux oder Windows, experimentell macOS), der Client auf dem Windows-Rechner bzw. der VM,
 die die Geräte nutzen soll.
 
+> [!WARNING]
+> **Mit KI erstellt:** Der Code dieses Projekts wurde von **Claude** (KI-Assistent von
+> Anthropic) im Auftrag und nach den Vorgaben von Goeste geschrieben. Er wurde getestet,
+> aber nicht mit allen Geräten und Konstellationen – er **kann Fehler enthalten**. Nutzung
+> auf eigenes Risiko; Fehlerberichte und Verbesserungen sind willkommen
+> ([Issues](../../issues)).
+
 ![Client-Fenster](docs/client-fenster.png)
 
 ## Funktionen

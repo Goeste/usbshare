@@ -1,5 +1,9 @@
 # usbshare Client für Windows
 
+> **Hinweis – mit KI erstellt:** Der Code wurde von Claude (KI-Assistent von Anthropic) für
+> Goeste geschrieben. Er wurde getestet, kann aber Fehler enthalten. Nutzung auf eigenes
+> Risiko. Fehler bitte melden: https://github.com/Goeste/usbshare/issues
+
 Bindet USB-Geräte ein, die ein oder mehrere usbshare-Server im Netzwerk anbieten –
 mit Fenster, Serverliste und automatischem Verbinden.
 

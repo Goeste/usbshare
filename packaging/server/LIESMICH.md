@@ -1,5 +1,9 @@
 # usbshare – Server
 
+> **Hinweis – mit KI erstellt:** Der Code wurde von Claude (KI-Assistent von Anthropic) für
+> Goeste geschrieben. Er wurde getestet, kann aber Fehler enthalten. Nutzung auf eigenes
+> Risiko. Fehler bitte melden: https://github.com/Goeste/usbshare/issues
+
 Läuft auf dem Rechner, an dem die USB-Geräte **eingesteckt** sind, und bietet sie im
 Netzwerk an. Die VM bindet sie mit dem **usbshare Client** ein (Paket `usbshare-client`).
 
