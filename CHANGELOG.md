@@ -6,6 +6,19 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.4.4] – 2026-11-04
+
+### Hinzugefügt
+- Beide Download-Pakete enthalten die Lizenz: `LICENSE` (GNU GPL v3), `NOTICE` mit
+  Copyright und Zusatzbedingung zur Namensnennung sowie `CHANGELOG.md`.
+- Hinweis in README und Paket-Anleitungen: Der Code wurde von Claude (KI-Assistent von
+  Anthropic) erstellt und kann Fehler enthalten.
+- „Über“-Dialoge und `usbshare --version` nennen Autor, Lizenz und Projektseite.
+
+### Behoben
+- Windows-Installationsskript `install-service.ps1` begann mit einer doppelten
+  UTF-8-Kennung (BOM), über die Windows PowerShell stolpern konnte.
+
 ## [0.4.3] – 2026-11-04
 
 ### Behoben
@@ -77,5 +90,6 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/Goeste/usbshare/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Goeste/usbshare/releases/tag/v0.4.3
