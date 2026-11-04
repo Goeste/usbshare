@@ -46,8 +46,8 @@ Die Anleitungen liegen als `LIESMICH.md` in den Paketen
 
 ## Windows-Warnung: Die Programme sind nicht signiert
 
-Die `.exe`-Dateien sind **nicht digital signiert** (es gibt noch kein Code-Signing-
-Zertifikat). Windows zeigt deshalb beim ersten Start eine Warnung von **Microsoft Defender
+Die `.exe`-Dateien sind **nicht digital signiert** (es gibt noch kein
+Code-Signing-Zertifikat). Windows zeigt deshalb beim ersten Start eine Warnung von **Microsoft Defender
 SmartScreen** („Der Computer wurde durch Windows geschützt“) und bei der Rechteabfrage
 „Unbekannter Herausgeber“ an. Das ist bei nicht signierten Programmen normal und kein
 Hinweis auf Schadsoftware.
