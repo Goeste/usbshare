@@ -80,10 +80,11 @@ python build.py server-gui   # usbshare-server-gui.exe
 python packaging/make_packages.py --version 0.4.3 --bins dist --out out
 ```
 
-Automatisch per GitHub Actions: Ein Tag `v<version>` (passend zu `__version__` in
-`usbshare/__init__.py`) baut Linux, Windows und experimentell macOS und veröffentlicht ein
-Release mit den Paketen und dem Abschnitt aus dem [CHANGELOG](CHANGELOG.md). Über „Run
-workflow“ lässt sich der Build auch ohne Release starten.
+**Releases per GitHub Actions:** Version in `usbshare/__init__.py` erhöhen, den Abschnitt in
+[CHANGELOG.md](CHANGELOG.md) ergänzen und auf `main` pushen – der Workflow „Build & Release“
+baut dann Linux, Windows und experimentell macOS, schnürt die Pakete und veröffentlicht das
+Release `v<version>` mit dem Changelog-Abschnitt. Alternativ einen Tag `v<version>` pushen.
+Über „Run workflow“ lässt sich der Build auch ohne Release starten.
 
 ## Aufbau
 

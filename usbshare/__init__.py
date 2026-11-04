@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Goeste – usbshare (siehe LICENSE und NOTICE)
+# Version hier erhöhen (und CHANGELOG.md ergänzen): Nach dem Push auf main baut GitHub
+# Actions automatisch alle Programme und veröffentlicht das Release v<version>.
 __version__ = "0.4.3"
 __author__ = "Goeste"
 __license__ = "GPL-3.0-or-later"
