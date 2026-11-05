@@ -150,6 +150,93 @@ def cmd_attach(a) -> int:
                        interval=a.interval)
 
 
+def cmd_update(a) -> int:
+    """Update the installed server binary from the latest GitHub release (Linux)."""
+    import shutil
+    import subprocess
+    import tempfile
+    from . import updater as U
+    print(f"Installiert: usbshare {__version__}")
+    try:
+        rel = U.latest_release()
+    except U.UpdateError as e:
+        print(f"Fehler: {e}", file=sys.stderr)
+        return 2
+    print(f"Neueste Version: {rel.version}")
+    if not U.is_newer(rel.version) and not a.force:
+        print("usbshare ist aktuell.")
+        return 0
+    print()
+    print(U.short_notes(rel.notes))
+    print()
+    if a.check:
+        print(f"Update verfügbar: {rel.version} – installieren mit: sudo usbshare update")
+        return 10
+    if sys.platform.startswith("win"):
+        print(f"Unter Windows bitte das Paket herunterladen: {rel.page}")
+        return 1
+    target = U.frozen_executable()
+    if not target:
+        print("Diese usbshare-Version läuft aus dem Quellcode – bitte mit git aktualisieren.")
+        return 1
+    if os.geteuid() != 0:
+        print("Für das Update werden Root-Rechte gebraucht: sudo usbshare update", file=sys.stderr)
+        return 1
+    if not a.yes:
+        try:
+            if input(f"Auf {rel.version} aktualisieren? [J/n] ").strip().lower() not in ("", "j", "ja", "y", "yes"):
+                print("Abgebrochen.")
+                return 1
+        except EOFError:
+            print("Keine Eingabe möglich – mit --yes bestätigen.", file=sys.stderr)
+            return 1
+
+    def progress(done, total):
+        if total:
+            print(f"\rLade herunter … {done * 100 // total:3d} %", end="", flush=True)
+    try:
+        zf = U.download_package(rel, "server", progress)
+        print("\rDownload geprüft (SHA-256 stimmt).      ")
+        binary = U.extract_member(zf, "/linux/usbshare")
+    except U.UpdateError as e:
+        print(f"\nFehler: {e}", file=sys.stderr)
+        return 2
+    new = target + ".new"
+    with open(new, "wb") as f:
+        f.write(binary)
+    os.chmod(new, 0o755)
+    try:
+        out = subprocess.run([new, "--version"], capture_output=True, text=True, timeout=60)
+        if rel.version not in (out.stdout + out.stderr):
+            raise RuntimeError((out.stdout + out.stderr).strip() or f"Exit-Code {out.returncode}")
+    except Exception as e:
+        os.unlink(new)
+        print(f"Die neue Version startet auf diesem System nicht ({e}) – Update abgebrochen, "
+              "die bisherige Version bleibt.", file=sys.stderr)
+        return 2
+    os.replace(new, target)                     # atomic; the running process keeps the old file
+    print(f"{target} aktualisiert auf {rel.version}.")
+    # service file shipped with the package (only if it is installed and changed)
+    unit = "/etc/systemd/system/usbshare.service"
+    try:
+        new_unit = U.extract_member(zf, "/linux/usbshare.service")
+        if os.path.exists(unit) and open(unit, "rb").read() != new_unit:
+            with tempfile.NamedTemporaryFile(delete=False, dir="/etc/systemd/system") as t:
+                t.write(new_unit)
+            shutil.move(t.name, unit)
+            os.chmod(unit, 0o644)
+            subprocess.run(["systemctl", "daemon-reload"], check=False)
+            print("Dienst-Datei aktualisiert.")
+    except (U.UpdateError, OSError):
+        pass
+    if shutil.which("systemctl") and subprocess.run(
+            ["systemctl", "is-enabled", "--quiet", "usbshare"], check=False).returncode == 0:
+        subprocess.run(["systemctl", "restart", "usbshare"], check=False)
+        print("Dienst usbshare neu gestartet. Verbundene Geräte werden kurz getrennt.")
+    print("Fertig.")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="usbshare",
                                 description="USB-Geräte über das Netzwerk freigeben (USB/IP-kompatibel)")
@@ -191,6 +278,12 @@ def main(argv=None) -> int:
     g.add_argument("--port", type=int, default=P.DEFAULT_PORT)
     g.set_defaults(fn=lambda a: __import__("usbshare.server_gui", fromlist=["main"]).main(
         ["--port", str(a.port)]))
+
+    up = sub.add_parser("update", help="auf die neueste Version aktualisieren (Linux-Server)")
+    up.add_argument("--check", action="store_true", help="nur prüfen, ob es ein Update gibt")
+    up.add_argument("--yes", "-y", action="store_true", help="ohne Rückfrage installieren")
+    up.add_argument("--force", action="store_true", help="auch installieren, wenn schon aktuell")
+    up.set_defaults(fn=cmd_update)
 
     rl = sub.add_parser("release", help="belegtes Gerät vom Client lösen (auf dem Server-Rechner)")
     rl.add_argument("busid")

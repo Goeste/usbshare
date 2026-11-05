@@ -126,6 +126,7 @@ jobs:
         run: |
           ls -la bins
           python packaging/make_packages.py --version ${{ steps.ver.outputs.version }} --bins bins --out out
+          (cd out && sha256sum *.zip > SHA256SUMS.txt && cat SHA256SUMS.txt)
           ls -la out
       - name: Release-Text aus CHANGELOG.md
         run: |
@@ -147,7 +148,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: usbshare-${{ steps.ver.outputs.version }}-pakete
-          path: out/*.zip
+          path: |
+            out/*.zip
+            out/SHA256SUMS.txt
       - name: GitHub-Release
         if: steps.ver.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
@@ -156,4 +159,6 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: usbshare ${{ steps.ver.outputs.version }}
           body_path: release-notes.md
-          files: out/*.zip
+          files: |
+            out/*.zip
+            out/SHA256SUMS.txt

@@ -97,6 +97,23 @@ Set-ExecutionPolicy -Scope Process Bypass
 installieren, `usbshare-client.exe` starten (Windows-Warnung siehe oben), „Server suchen“.
 Die VM muss im selben Netzwerk wie der Server sein (Netzwerkkarte gebrückt, nicht NAT).
 
+## Updates
+
+- **Windows-Client:** Menü **⋯** → **„Nach Updates suchen …“**. Gibt es eine neuere
+  Version, zeigt das Fenster die Änderungen; **„Jetzt aktualisieren“** lädt sie, prüft die
+  Prüfsumme, ersetzt die Programmdatei und startet den Client neu.
+- **Linux-Server:** `sudo usbshare update` (mit `--check` nur nachsehen, `--yes` ohne
+  Rückfrage) – lädt das Server-Paket, prüft es, ersetzt `/usr/local/bin/usbshare`, testet die
+  neue Version vor dem Austausch und startet den Dienst neu. Die Konfiguration bleibt
+  erhalten. Im Server-Fenster geht das über den Knopf **„Nach Updates suchen“** (Linux fragt
+  nach dem Passwort).
+- **Windows-Server:** Das Fenster zeigt neue Versionen an; installiert wird wie bisher über
+  das Paket (`install-service.ps1` erneut ausführen).
+
+Updates werden nur auf Knopfdruck gesucht (Abfrage bei GitHub, keine automatische
+Verbindung). Jedes Release enthält `SHA256SUMS.txt`; ein Update wird nur installiert, wenn
+die Prüfsumme stimmt.
+
 ## Aus dem Quellcode starten und bauen
 
 ```bash

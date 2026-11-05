@@ -142,6 +142,8 @@ class ServerWindow:
         _f, self.subtitle, right = header(root, "server", "usbshare Server")
         self.state_lbl = ttk.Label(right, style="Section.TLabel")
         self.state_lbl.pack(side="left", padx=(0, 14))
+        ttk.Button(right, text="Nach Updates suchen", command=self.check_updates).pack(
+            side="left", padx=(0, 8))
         mb = ttk.Menubutton(right, text="⋯", width=3)
         mb.pack(side="left")
         m = tk.Menu(mb, tearoff=False)
@@ -149,6 +151,7 @@ class ServerWindow:
         self.to_tray = tk.BooleanVar(value=self.prefs.get("close_to_tray", True))
         m.add_command(label="Zugelassene Clients …", command=self.edit_allowed)
         m.add_command(label="Konfigurationsdatei öffnen", command=self.open_config)
+        m.add_command(label="Nach Updates suchen …", command=self.check_updates)
         m.add_separator()
         m.add_checkbutton(label="Beim Anmelden im Infobereich starten", variable=self.autostart,
                           command=self._toggle_autostart,
@@ -435,6 +438,20 @@ class ServerWindow:
                 subprocess.Popen(["xdg-open", path])
         except OSError as e:
             messagebox.showerror("Konfiguration", f"{path}\n\n{e}")
+
+    def check_updates(self):
+        from .update_ui import UpdateDialog
+        UpdateDialog(self.root, "server", "usbshare Server", on_installed=self._restart_after_update)
+
+    def _restart_after_update(self):
+        """Linux: the service was updated and restarted; reopen this window with the new binary."""
+        from .updater import frozen_executable
+        exe = frozen_executable()
+        self.tray.stop()
+        if exe and not IS_WIN:
+            self.root.destroy()
+            os.execv(exe, [exe, "gui", "--port", str(self.port)])
+        messagebox.showinfo("usbshare Server", "Update installiert.")
 
     # -- window / tray -----------------------------------------------------------------
     def show(self):

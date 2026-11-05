@@ -200,17 +200,33 @@ class UiQueue:
 class SingleInstance:
     """First instance listens on a local UDP port; later ones ask it to show its window."""
 
-    def __init__(self, port: int):
+    def __init__(self, port: int, wait: float = 0.0):
+        """wait: keep trying for this many seconds (after an update the old instance is
+        still shutting down)."""
+        import time
         self.port = port
         self.sock: Optional[socket.socket] = None
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            if IS_WIN:
-                s.setsockopt(socket.SOL_SOCKET, getattr(socket, "SO_EXCLUSIVEADDRUSE", -5), 1)
-            s.bind(("127.0.0.1", port))
-            self.sock = s
-        except OSError:
-            self.sock = None
+        deadline = time.monotonic() + wait
+        while True:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                if IS_WIN:
+                    s.setsockopt(socket.SOL_SOCKET, getattr(socket, "SO_EXCLUSIVEADDRUSE", -5), 1)
+                s.bind(("127.0.0.1", port))
+                self.sock = s
+                return
+            except OSError:
+                s.close()
+                if time.monotonic() >= deadline:
+                    return
+                time.sleep(0.3)
+
+    def close(self) -> None:
+        if self.sock:
+            try:
+                self.sock.close()
+            except OSError:
+                pass
 
     @property
     def first(self) -> bool:

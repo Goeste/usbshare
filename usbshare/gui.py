@@ -265,6 +265,7 @@ class App:
         m.add_checkbutton(label="Beim Schließen im Infobereich weiterlaufen", variable=self.to_tray,
                           command=self._toggle_tray)
         m.add_separator()
+        m.add_command(label="Nach Updates suchen …", command=self.check_updates)
         m.add_command(label="usbip-win2 herunterladen …", command=lambda: webbrowser.open(USBIP_WIN2_URL))
         m.add_command(label=f"Über usbshare {__version__}", command=lambda: messagebox.showinfo(
             "usbshare", f"usbshare Client {__version__}\nUSB-Geräte über das Netzwerk nutzen.\n\n"
@@ -513,6 +514,10 @@ class App:
     def show(self):
         show_window(self.root)
 
+    def check_updates(self):
+        from .update_ui import UpdateDialog
+        UpdateDialog(self.root, "client", "usbshare Client", on_installed=self.quit)
+
     def show_log(self):
         with self.c._lock:
             msgs = list(self.c.messages)
@@ -643,10 +648,14 @@ def main(argv=None) -> int:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except Exception:
             pass
-    inst = SingleInstance(INSTANCE_PORT)
+    after_update = "--after-update" in argv
+    inst = SingleInstance(INSTANCE_PORT, wait=15.0 if after_update else 0.0)
     if not inst.first:
         inst.notify_running()          # bring the running client to the front
         return 0
+    if after_update:
+        from .update_ui import cleanup_old_exe
+        cleanup_old_exe()
     settings = Settings(os.environ.get("USBSHARE_CLIENT_CONFIG"))
     root = tk.Tk()
     app = App(root, Controller(settings))

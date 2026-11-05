@@ -23,7 +23,8 @@ os.makedirs("build", exist_ok=True)
 for kind in ("client", "server"):
     save_ico(kind, os.path.join("build", f"{kind}.ico"))
 
-UI = ["--collect-data", "sv_ttk", "--hidden-import", "PIL._tkinter_finder"]
+UI = ["--collect-data", "sv_ttk", "--hidden-import", "PIL._tkinter_finder",
+      "--hidden-import", "usbshare.update_ui", "--hidden-import", "usbshare.updater"]
 if sys.platform.startswith("win"):
     UI += ["--hidden-import", "pystray._win32"]
 

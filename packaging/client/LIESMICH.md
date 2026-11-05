@@ -102,6 +102,9 @@ Im Menü **⋯** oben rechts:
 * **Beim Schließen im Infobereich weiterlaufen** – ausschalten, wenn das X den Client
   komplett beenden soll.
 * **Meldungen anzeigen** – Verlauf aller Ereignisse.
+* **Nach Updates suchen …** – prüft auf GitHub, ob es eine neuere Version gibt, zeigt die
+  Änderungen und installiert sie mit „Jetzt aktualisieren“ (Download wird per Prüfsumme
+  geprüft, danach startet der Client neu).
 
 Das Design folgt dem hellen bzw. dunklen Modus von Windows.
 

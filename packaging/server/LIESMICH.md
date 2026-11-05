@@ -157,12 +157,23 @@ nach wenigen Sekunden übernommen; `host`, `port` und `usbdk` erst nach Neustart
 | `usbdk`           | Windows: UsbDk verwenden                                      |
 | `[server.assign]` | `"046d:c52b" = ["192.168.1.50"]` – Gerät nur für diese Clients |
 
+## Updates
+
+* **Linux:** `sudo usbshare update` – lädt die neueste Version von GitHub, prüft die
+  Prüfsumme, testet das neue Programm, ersetzt es und startet den Dienst neu (verbundene
+  Geräte werden dabei kurz getrennt). `usbshare update --check` zeigt nur, ob es ein Update
+  gibt. Im Server-Fenster: Knopf **„Nach Updates suchen“** → „Jetzt aktualisieren“ (Linux
+  fragt nach deinem Passwort). Die Konfiguration bleibt erhalten.
+* **Windows:** Das Server-Fenster zeigt über „Nach Updates suchen“ neue Versionen an.
+  Installiert wird über das neue Paket: entpacken und `install-service.ps1` erneut ausführen.
+
 ## Kommandozeile
 
 ```
 usbshare list                  # lokale USB-Geräte
 usbshare remote 127.0.0.1      # Geräte mit Status (frei / belegt von … / reserviert)
 usbshare release 1-4           # Gerät vom Client lösen
+sudo usbshare update           # auf die neueste Version aktualisieren (Linux)
 usbshare gui                   # Server-Fenster (Linux; Windows: usbshare-server-gui.exe)
 ```
 

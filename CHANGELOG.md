@@ -6,6 +6,18 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.5.0] – 2026-11-05
+
+### Hinzugefügt
+- **Updates ohne manuellen Download.**
+  - Windows-Client: Menü ⋯ → „Nach Updates suchen …“ zeigt die Änderungen und installiert
+    die neue Version mit einem Klick (die Programmdatei wird ersetzt, der Client startet neu).
+  - Linux-Server: `sudo usbshare update` (`--check`, `--yes`) ersetzt das Programm, prüft
+    vorher, dass die neue Version startet, und startet den Dienst neu.
+  - Server-Fenster: Knopf „Nach Updates suchen“; unter Linux mit Passwortabfrage (pkexec).
+- Jedes Release enthält `SHA256SUMS.txt`; Updates werden nur mit passender Prüfsumme
+  installiert.
+
 ## [0.4.7] – 2026-11-05
 
 ### Geändert
@@ -127,7 +139,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.7...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Goeste/usbshare/releases/tag/v0.5.0
 [0.4.7]: https://github.com/Goeste/usbshare/releases/tag/v0.4.7
 [0.4.6]: https://github.com/Goeste/usbshare/releases/tag/v0.4.6
 [0.4.5]: https://github.com/Goeste/usbshare/releases/tag/v0.4.5
