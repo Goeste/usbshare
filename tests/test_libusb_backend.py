@@ -424,3 +424,28 @@ class RealLibusbIso(unittest.TestCase):
         self.assertEqual((r.status, r.actual_length, r.data), (0, 576, b""))
         raw = pack_ret_submit(10, r, P.USBIP_DIR_OUT, -1)
         self.assertEqual(len(raw), 48 + 3 * 16)                           # no data back for OUT
+
+
+class PortResetTest(unittest.TestCase):
+    def test_port_reset_resets_device_instead_of_forwarding(self):
+        log = []
+        dev = Dev(log)
+        s = LibusbSession(backend_for(dev), dev, reset=False)
+        log.clear()
+        out = []
+        setup = bytes([0x23, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00])   # SetPortFeature(RESET)
+        s.submit(SubmitCmd(3, 0, P.USBIP_DIR_OUT, 0, 0, 0, 0, 0, 0, setup), lambda q, r: out.append(r))
+        self.assertEqual(out[0].status, 0)
+        self.assertIn(("reset",), log)
+        self.assertFalse(s.handle.transfers)                 # nothing sent to the device
+
+    def test_port_reset_with_reenumeration(self):
+        log = []
+        dev = Dev(log)
+        s = LibusbSession(backend_for(dev), dev, reset=False)
+        dev.reset_raises = usb1.USBErrorNotFound()
+        out = []
+        setup = bytes([0x23, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00])
+        s.submit(SubmitCmd(4, 0, P.USBIP_DIR_OUT, 0, 0, 0, 0, 0, 0, setup), lambda q, r: out.append(r))
+        self.assertEqual(out[0].status, 0)
+        self.assertIs(s.handle, dev.handles[-1])             # reopened after re-enumeration

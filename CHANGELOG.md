@@ -6,6 +6,19 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.4.5] – 2026-11-05
+
+### Behoben
+- **Geräte (z. B. Headsets) wurden unter Windows kurz erkannt und verschwanden wieder.**
+  usbip-win2 sendet beim Zurücksetzen eines Geräts einen Port-Reset
+  (`SET_FEATURE(PORT_RESET)`). Der Server hat diesen bisher als normale Anfrage an das Gerät
+  weitergeleitet, das ihn ablehnte – Windows hat das Gerät daraufhin entfernt. Jetzt setzt
+  der Server das echte Gerät zurück (wie der Linux-usbip-Server) und meldet Erfolg.
+- Fehlgeschlagene Steuer-Anfragen (z. B. `SET_INTERFACE`) stehen jetzt als Warnung im Log.
+
+### Tests
+- Isochrone Transfers (USB-Audio: Mikrofon und Lautsprecher) mit echten libusb-Objekten.
+
 ### Dokumentation
 - Hinweis in README, Paket-Anleitungen und Release-Text: Die Windows-Programme sind nicht
   signiert; Erklärung der SmartScreen-Warnung und wie man die Programme trotzdem startet.
@@ -94,6 +107,7 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/Goeste/usbshare/releases/tag/v0.4.5
 [0.4.4]: https://github.com/Goeste/usbshare/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Goeste/usbshare/releases/tag/v0.4.3

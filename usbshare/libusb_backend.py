@@ -430,10 +430,25 @@ class LibusbSession(DeviceSession):
                 self.handle.clearHalt(idx & 0xFF)
             elif rt == 0x00 and req == 0x05:          # SET_ADDRESS: host already did this
                 pass
+            elif rt == 0x23 and req == 0x03 and val == 4:
+                # SET_FEATURE(PORT_RESET): the client resets its virtual port (usbip-win2 does
+                # this e.g. for audio devices). Like the Linux usbip host: reset the real
+                # device here instead of sending a hub request to it (it would stall and
+                # Windows would drop the device).
+                log.info("%s: client requested port reset", self.busid)
+                self._cancel_all()
+                self._reset_device()
+            elif rt == 0x23:
+                # other hub-port requests for the virtual port: nothing to do on the device
+                log.debug("%s: ignoring port request %02x/%04x", self.busid, req, val)
             else:
                 return False
+        except BackendError as e:
+            log.warning("%s: %s", self.busid, e)
+            done(cmd.seqnum, UrbResult(status=-P.ESHUTDOWN))
+            return True
         except usb1.USBError as e:
-            log.info("control request %02x/%02x failed: %s", rt, req, e)
+            log.warning("%s: control request %02x/%02x failed: %s", self.busid, rt, req, e)
             done(cmd.seqnum, UrbResult(status=_errno_for(e)))
             return True
         done(cmd.seqnum, UrbResult(status=0))
