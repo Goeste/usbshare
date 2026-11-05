@@ -601,3 +601,57 @@ class AudioBuffer(unittest.TestCase):
         self.assertNotIn(0x01, self.s._streams)
         self.assertEqual(dict(self.done)[2].status, -P.ECONNRESET)     # pending one cancelled
         self.assertIn("Audio-Puffer", self.s.summary())
+
+
+class TransientErrorRetry(unittest.TestCase):
+    """EPROTO on interrupt endpoints is retried on the server instead of reaching Windows."""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            usb1.loadLibrary()
+        except Exception as e:  # pragma: no cover
+            raise unittest.SkipTest(f"libusb-1.0 not available: {e}")
+
+    def setUp(self):
+        dev = RealDev([])
+        self.s = LibusbSession(backend_for(dev), dev, reset=False)
+        self.out = []
+        cmd = SubmitCmd(7, 0, P.USBIP_DIR_IN, 4, 0, 8, 0, 0, 10, b"\0" * 8)   # ep 0x84
+        self.s._epmap[0x84] = 3
+        self.s.submit(cmd, lambda q, r: self.out.append(r))
+
+    def _fail(self, t):
+        tr = t._USBTransfer__transfer.contents
+        tr.actual_length, tr.status = 0, usb1.TRANSFER_ERROR
+        t.getCallback()(t)
+
+    def _wait_transfers(self, n):
+        for _ in range(100):
+            if len(self.s.handle.transfers) >= n:
+                return
+            time.sleep(0.01)
+
+    def test_error_is_retried_then_data_delivered(self):
+        self._fail(self.s.handle.transfers[-1])
+        self._wait_transfers(2)
+        self._fail(self.s.handle.transfers[-1])
+        self._wait_transfers(3)
+        self.assertEqual(self.out, [])                          # nothing reported yet
+        self.s.handle.transfers[-1].complete(b"\x01\x02\x03", offset=0)
+        self.assertEqual((self.out[0].status, self.out[0].data), (0, b"\x01\x02\x03"))
+        self.assertIn("wiederholt 0x84: 2×", self.s.summary())
+
+    def test_gives_up_after_three_retries(self):
+        for n in range(2, 5):
+            self._fail(self.s.handle.transfers[-1])
+            self._wait_transfers(n)
+        self._fail(self.s.handle.transfers[-1])
+        self.assertEqual(self.out[0].status, -P.EPROTO)
+
+    def test_cancel_during_retry_pause(self):
+        self._fail(self.s.handle.transfers[-1])
+        self.s.cancel(7)                                        # unlink while waiting
+        time.sleep(0.05)
+        self.assertEqual(self.out[0].status, -P.ECONNRESET)
+        self.assertEqual(len(self.s.handle.transfers), 1)       # not resubmitted

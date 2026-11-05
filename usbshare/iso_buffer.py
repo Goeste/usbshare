@@ -166,12 +166,13 @@ class IsoOutStream:
         with self._lock:
             self._inflight.discard(t)
             stopping = self._stopping
-        try:
-            for st in t.getISOSetupList():
-                if st["status"] != usb1.TRANSFER_COMPLETED:
-                    self.device_errors[st["status"]] += 1
-        except Exception:
-            pass
+        if status != usb1.TRANSFER_CANCELLED:        # cancelled on stop: not a device error
+            try:
+                for st in t.getISOSetupList():
+                    if st["status"] != usb1.TRANSFER_COMPLETED:
+                        self.device_errors[st["status"]] += 1
+            except Exception:
+                pass
         t.doom()
         if status == usb1.TRANSFER_NO_DEVICE:
             log.warning("%s: audio buffer: device gone", self.name)

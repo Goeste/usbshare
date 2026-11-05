@@ -47,6 +47,7 @@ _LIBUSB_NAMES = {usb1.TRANSFER_ERROR: "nicht übertragen", usb1.TRANSFER_OVERFLO
                  usb1.TRANSFER_STALL: "stall", usb1.TRANSFER_TIMED_OUT: "timeout",
                  usb1.TRANSFER_CANCELLED: "abgebrochen", usb1.TRANSFER_NO_DEVICE: "Gerät weg"}
 CONTROL_LOG_LIMIT = 300
+RETRIES = 3          # transparent retries of transient errors on interrupt/bulk endpoints
 
 XFER_CONTROL, XFER_ISO, XFER_BULK, XFER_INTERRUPT = 0, 1, 2, 3
 _ERRNAME = {P.EPIPE: "stall", P.EPROTO: "protocol", P.ETIMEDOUT: "timeout",
@@ -240,6 +241,12 @@ class LibusbSession(DeviceSession):
         self._iso_pkt_kind: Counter = Counter()      # (addr, libusb status) -> packets
         self._iso_silent: Counter = Counter()        # OUT URBs that carried only zeros
         self._ctrl_logged = 0
+        self._retries: Dict[int, int] = {}            # seqnum -> retries done
+        self._retry_cancelled: set = set()
+        self._retry_count: Counter = Counter()        # endpoint -> retried transfers
+        self._iso_last_urb: Dict[int, float] = {}     # activity monitor (isochronous)
+        self._iso_idle: Dict[int, float] = {}
+        self._monitor_stop = threading.Event()
         self._stream_stats: List[str] = []
         self._open_and_claim(dev)
         if reset:
@@ -250,6 +257,7 @@ class LibusbSession(DeviceSession):
             self._reset_device()
         cfg = self.cfg
         self.info = backend._info(self.dev, cfg)
+        threading.Thread(target=self._monitor, name=f"monitor-{self.busid}", daemon=True).start()
         key = (self.info.busid, self.info.id_vendor, self.info.id_product)
         if key not in backend._names:
             try:
@@ -352,6 +360,8 @@ class LibusbSession(DeviceSession):
         addr = cmd.endpoint_address
         is_in = cmd.direction == P.USBIP_DIR_IN
         iso = cmd.iso_packets
+        if iso:
+            self._note_iso_urb(addr)
         if iso and not is_in:
             if cmd.data and cmd.data.count(0) == len(cmd.data):
                 self._iso_silent[addr] += 1
@@ -400,6 +410,21 @@ class LibusbSession(DeviceSession):
         try:
             status = _STATUS.get(t.getStatus(), -P.EPROTO)
             is_in = cmd.direction == P.USBIP_DIR_IN
+            if (status == -P.EPROTO and cmd.ep != 0 and not cmd.iso_packets
+                    and self._retries.get(cmd.seqnum, 0) < RETRIES):
+                # Transient transaction error (CRC/timeout on the wire). A host controller
+                # retries these itself; passing them to the client makes Windows treat the
+                # device as faulty (HID error recovery) and can stall the whole device.
+                n = self._retries[cmd.seqnum] = self._retries.get(cmd.seqnum, 0) + 1
+                self._retry_count[cmd.endpoint_address] += 1
+                if self._retry_count[cmd.endpoint_address] in (1, 10, 100, 1000):
+                    log.info("%s: Übertragungsfehler auf Endpoint 0x%02x – wird wiederholt "
+                             "(bisher %d×)", self.busid, cmd.endpoint_address,
+                             self._retry_count[cmd.endpoint_address])
+                t.doom()
+                threading.Timer(0.002 * n, self._retry, args=(cmd, done)).start()
+                return
+            self._retries.pop(cmd.seqnum, None)
             if cmd.iso_packets:
                 setups = t.getISOSetupList()
                 bufs = t.getISOBufferList() if is_in else [b""] * len(setups)
@@ -461,6 +486,40 @@ class LibusbSession(DeviceSession):
             if self._errors[key] == 1:
                 log.warning("%s: endpoint 0x%02x: error %d (%s)", self.busid, addr, res.status,
                             _ERRNAME.get(-res.status, "?"))
+
+    def _retry(self, cmd: SubmitCmd, done: CompletionFn) -> None:
+        with self._lock:
+            cancelled = cmd.seqnum in self._retry_cancelled
+            self._retry_cancelled.discard(cmd.seqnum)
+        if cancelled:
+            self._retries.pop(cmd.seqnum, None)
+            done(cmd.seqnum, UrbResult(status=-P.ECONNRESET))
+            return
+        self.submit(cmd, done)
+
+    # -- activity monitor for audio/video endpoints ------------------------------------------
+    def _note_iso_urb(self, addr: int) -> None:
+        now = time.monotonic()
+        idle_since = self._iso_idle.pop(addr, None)
+        if idle_since is not None:
+            log.info("%s: Endpoint 0x%02x: Client sendet wieder Audio/Video-Daten (Pause %.1f s)",
+                     self.busid, addr, now - idle_since)
+        self._iso_last_urb[addr] = now
+
+    def _monitor(self) -> None:
+        while not self._monitor_stop.wait(0.5):
+            now = time.monotonic()
+            for addr, last in list(self._iso_last_urb.items()):
+                if addr not in self._iso_idle and now - last > 1.0:
+                    self._iso_idle[addr] = last
+                    log.info("%s: Endpoint 0x%02x: seit %.1f s keine Audio/Video-Daten mehr vom "
+                             "Client (Schnittstelle ist noch aktiv)", self.busid, addr, now - last)
+
+    def _forget_iso_activity(self, interface: Optional[int]) -> None:
+        for addr in list(self._iso_last_urb):
+            if interface is None or self._ep_iface.get(addr, interface) == interface:
+                self._iso_last_urb.pop(addr, None)
+                self._iso_idle.pop(addr, None)
 
     def _stream_for(self, addr: int, cmd: SubmitCmd) -> IsoOutStream:
         with self._lock:
@@ -527,6 +586,9 @@ class LibusbSession(DeviceSession):
                          for (a, s), n in sorted(self._errors.items())) or "keine"
         iso = self.iso_summary()
         buf = "; ".join(self._stream_stats)
+        if self._retry_count:
+            errs += ", wiederholt " + ", ".join(f"0x{a:02x}: {n}×" for a, n in
+                                               sorted(self._retry_count.items()))
         return (f"{self._urbs} URBs, Daten von Endpoints: {eps}, Fehler: {errs}"
                 + (f", Audio/Video: {iso}" if iso else "")
                 + (f", Audio-Puffer: {buf}" if buf else ""))
@@ -545,6 +607,7 @@ class LibusbSession(DeviceSession):
                     self._claim_all()
             elif rt == 0x01 and req == 0x0B:          # SET_INTERFACE
                 self._stop_streams(idx)
+                self._forget_iso_activity(idx)
                 try:
                     self.handle.setInterfaceAltSetting(idx, val)
                 finally:
@@ -580,6 +643,9 @@ class LibusbSession(DeviceSession):
 
     def cancel(self, seqnum: int) -> None:
         with self._lock:
+            if seqnum in self._retries and seqnum not in self._transfers:
+                self._retry_cancelled.add(seqnum)      # completed by _retry()
+                return
             streams = list(self._streams.values())
         for st in streams:
             if st.cancel(seqnum):
@@ -608,6 +674,7 @@ class LibusbSession(DeviceSession):
             time.sleep(0.01)
 
     def close(self) -> None:
+        self._monitor_stop.set()
         self._stop_streams()
         self._cancel_all()
         log.info("%s: session ended – %s", self.busid, self.summary())

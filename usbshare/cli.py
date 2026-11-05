@@ -7,6 +7,7 @@ import argparse
 import logging
 import os
 import signal
+import threading
 import sys
 
 from . import __author__, __url__, __version__
@@ -84,7 +85,13 @@ def cmd_serve(a) -> int:
     backend = LibusbBackend(use_usbdk=cfg.usbdk, reset=cfg.reset_on_attach,
                             audio_buffer_ms=cfg.audio_buffer_ms)
     server = UsbIpServer(backend, host=cfg.host, port=cfg.port, config=cfg)
-    server.bind()
+    try:
+        server.bind()
+    except OSError as e:
+        backend.shutdown()
+        print(f"Fehler: Port {cfg.port} kann nicht geöffnet werden ({e}). Läuft usbshare "
+              "schon?", file=sys.stderr)
+        return 1
 
     def stop(*_):
         server.stop()
@@ -103,7 +110,10 @@ def cmd_serve(a) -> int:
     try:
         server.serve_forever()
     finally:
-        backend.shutdown()
+        server.close_sessions(timeout=3.0)
+        t = threading.Thread(target=backend.shutdown, daemon=True)
+        t.start()
+        t.join(timeout=3.0)            # never hang on exit (systemd would have to kill us)
     return 0
 
 

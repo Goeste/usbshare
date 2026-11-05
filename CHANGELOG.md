@@ -6,6 +6,23 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.6.1] – 2026-11-05
+
+### Behoben
+- **Kurze Übertragungsfehler** (`-EPROTO`) auf Interrupt-/Bulk-Endpoints – z. B. am
+  Tasten-Teil eines Headset-Dongles – werden jetzt auf dem Server bis zu 3× wiederholt, wie es
+  ein USB-Controller tut, statt sie an Windows weiterzugeben. Windows hat solche Fehler als
+  Gerätedefekt behandelt, wodurch das ganze Gerät (auch Audio) hängen bleiben konnte.
+- `systemctl stop/restart` hing 10 s und der Dienst musste beendet werden: Beim Beenden werden
+  jetzt alle Clients getrennt, das Herunterfahren ist zeitlich begrenzt.
+- Lässt sich der Port nicht öffnen (z. B. usbshare läuft schon), gibt es eine klare
+  Fehlermeldung statt eines Absturzes in libusb.
+- Abgebrochene Übertragungen des Audio-Puffers zählen nicht mehr als Gerätefehler.
+
+### Hinzugefügt
+- Log: wann der Client keine Audio-/Video-Daten mehr sendet und wann wieder, Abbrüche von
+  Übertragungen durch den Client, Anzahl der Wiederholungen je Endpoint.
+
 ## [0.6.0] – 2026-11-05
 
 ### Hinzugefügt
@@ -174,7 +191,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/Goeste/usbshare/releases/tag/v0.6.1
 [0.6.0]: https://github.com/Goeste/usbshare/releases/tag/v0.6.0
 [0.5.2]: https://github.com/Goeste/usbshare/releases/tag/v0.5.2
 [0.5.1]: https://github.com/Goeste/usbshare/releases/tag/v0.5.1

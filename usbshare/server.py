@@ -296,6 +296,22 @@ class UsbIpServer:
             except OSError:
                 pass
 
+    def close_sessions(self, timeout: float = 3.0) -> None:
+        """Disconnect all clients and wait until their devices are given back."""
+        with self._lock:
+            conns = list(self._conns.values())
+        for c in conns:
+            try:
+                c.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with self._lock:
+                if not self._busy:
+                    return
+            time.sleep(0.05)
+
     def stop(self) -> None:
         self._stopping.set()
         if self._udp:
@@ -548,6 +564,7 @@ class UrbPump:
         self._unlinked: Dict[int, int] = {}         # submit seqnum -> unlink seqnum
         self._dead = threading.Event()
         self._gone = False
+        self._unlinks = 0
 
     def run(self) -> None:
         writer = threading.Thread(target=self._writer, name=f"tx-{self.peer}", daemon=True)
@@ -642,6 +659,9 @@ class UrbPump:
             pass
 
     def _on_unlink(self, seqnum: int, target: int) -> None:
+        self._unlinks += 1
+        if self._unlinks in (1, 10, 100, 1000):
+            log.info("%s: Client bricht Übertragungen ab (bisher %d×)", self.peer, self._unlinks)
         with self._lock:
             pending = target in self._pending
             if pending:
