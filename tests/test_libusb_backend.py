@@ -2,6 +2,7 @@
 # Copyright (C) 2026 Goeste – usbshare (siehe LICENSE und NOTICE)
 """LibusbSession against a simulated libusb device (shaped like a Logitech Unifying receiver:
 three HID interfaces with one interrupt-IN endpoint each)."""
+import time
 import unittest
 
 import usb1
@@ -449,3 +450,38 @@ class PortResetTest(unittest.TestCase):
         s.submit(SubmitCmd(4, 0, P.USBIP_DIR_OUT, 0, 0, 0, 0, 0, 0, setup), lambda q, r: out.append(r))
         self.assertEqual(out[0].status, 0)
         self.assertIs(s.handle, dev.handles[-1])             # reopened after re-enumeration
+
+
+class IsoStreamHealth(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            usb1.loadLibrary()
+        except Exception as e:  # pragma: no cover
+            raise unittest.SkipTest(f"libusb-1.0 not available: {e}")
+
+    def _urb(self, s, seq):
+        from usbshare.protocol import IsoPacket
+        iso = [IsoPacket(0, 192)]
+        cmd = SubmitCmd(seq, 0, P.USBIP_DIR_OUT, 1, P.URB_ISO_ASAP, 192, 0, 1, 1, b"\0" * 8,
+                        b"\0" * 192, iso)
+        s.submit(cmd, lambda q, r: None)
+        return s.handle.transfers[-1]
+
+    def test_detects_stream_running_dry(self):
+        dev = RealIsoDev([])
+        s = LibusbSession(backend_for(dev), dev, reset=False)
+        # healthy: client keeps 2 URBs queued
+        pending = [self._urb(s, 1), self._urb(s, 2)]
+        for i in range(3, 20):
+            pending.pop(0).complete_iso([(None, 192)])
+            pending.append(self._urb(s, i))
+        self.assertEqual(s._iso_dry[0x01], 0)
+        # client too late: queue empties before the next URB arrives
+        for t in pending:
+            t.complete_iso([(None, 192)])
+        time.sleep(0.02)
+        self._urb(s, 99)
+        self.assertEqual(s._iso_dry[0x01], 1)
+        self.assertGreaterEqual(s._iso_maxgap[0x01], 15)
+        self.assertIn("leergelaufen 1", s.summary())

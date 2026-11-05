@@ -212,6 +212,14 @@ class LibusbSession(DeviceSession):
         self._urbs = 0
         self._data_seen: set = set()
         self._errors: Counter = Counter()
+        # isochronous (audio/video) stream health: a stream "runs dry" when the previous URB
+        # has completed before the client's next one arrived – the device then has a gap.
+        self._iso_inflight: Counter = Counter()
+        self._iso_count: Counter = Counter()
+        self._iso_dry: Counter = Counter()
+        self._iso_maxgap: Dict[int, float] = {}
+        self._iso_last_done: Dict[int, float] = {}
+        self._iso_pkt_err: Counter = Counter()
         self._open_and_claim(dev)
         if reset:
             # Put the device into a clean, just-plugged-in state for the client. Some devices
@@ -321,6 +329,8 @@ class LibusbSession(DeviceSession):
         addr = cmd.endpoint_address
         is_in = cmd.direction == P.USBIP_DIR_IN
         iso = cmd.iso_packets
+        if iso:
+            self._iso_submitted(addr)
         try:
             t = self.handle.getTransfer(iso_packets=len(iso) if iso else 0)
             if cmd.ep == 0:
@@ -354,6 +364,10 @@ class LibusbSession(DeviceSession):
     def _complete(self, t: usb1.USBTransfer, cmd: SubmitCmd, done: CompletionFn) -> None:
         with self._lock:
             self._transfers.pop(cmd.seqnum, None)
+            if cmd.iso_packets:
+                a = cmd.endpoint_address
+                self._iso_inflight[a] = max(0, self._iso_inflight[a] - 1)
+                self._iso_last_done[a] = time.monotonic()
         try:
             status = _STATUS.get(t.getStatus(), -P.EPROTO)
             is_in = cmd.direction == P.USBIP_DIR_IN
@@ -367,6 +381,8 @@ class LibusbSession(DeviceSession):
                     packets.append(IsoPacket(orig.offset, orig.length, st["actual_length"], pst))
                     if is_in:
                         chunks.append(bytes(buf[:st["actual_length"]]))
+                if errors:
+                    self._iso_pkt_err[cmd.endpoint_address] += errors
                 data = b"".join(chunks)
                 actual = len(data) if is_in else sum(p.actual_length for p in packets)
                 res = UrbResult(status, actual, data, packets, cmd.start_frame, errors)
@@ -407,11 +423,40 @@ class LibusbSession(DeviceSession):
                 log.warning("%s: endpoint 0x%02x: error %d (%s)", self.busid, addr, res.status,
                             _ERRNAME.get(-res.status, "?"))
 
+    def _iso_submitted(self, addr: int) -> None:
+        now = time.monotonic()
+        with self._lock:
+            last = self._iso_last_done.get(addr)
+            dry = (self._iso_count[addr] > 4 and self._iso_inflight[addr] == 0
+                   and last is not None and now - last < 1.0)
+            self._iso_count[addr] += 1
+            self._iso_inflight[addr] += 1
+            if not dry:
+                return
+            gap = (now - last) * 1000
+            self._iso_dry[addr] += 1
+            self._iso_maxgap[addr] = max(self._iso_maxgap.get(addr, 0.0), gap)
+            n = self._iso_dry[addr]
+        if n == 1 or n % 100 == 0:
+            log.warning("%s: audio/video stream on endpoint 0x%02x ran dry %d× (gap %.1f ms) – "
+                        "data from the client arrives too late (network delay or CPU load)",
+                        self.busid, addr, n, gap)
+
+    def iso_summary(self) -> str:
+        parts = []
+        for a in sorted(self._iso_count):
+            parts.append(f"0x{a:02x}: {self._iso_count[a]} URBs, leergelaufen {self._iso_dry[a]}×"
+                         + (f" (max. {self._iso_maxgap[a]:.0f} ms)" if self._iso_dry[a] else "")
+                         + (f", Paketfehler {self._iso_pkt_err[a]}" if self._iso_pkt_err[a] else ""))
+        return "; ".join(parts)
+
     def summary(self) -> str:
         eps = ", ".join(f"0x{a:02x}" for a in sorted(self._data_seen)) or "keine"
         errs = ", ".join(f"0x{a:02x}:{_ERRNAME.get(-s, s)}x{n}"
                          for (a, s), n in sorted(self._errors.items())) or "keine"
-        return f"{self._urbs} URBs, Daten von Endpoints: {eps}, Fehler: {errs}"
+        iso = self.iso_summary()
+        return (f"{self._urbs} URBs, Daten von Endpoints: {eps}, Fehler: {errs}"
+                + (f", Audio/Video: {iso}" if iso else ""))
 
     def _special_control(self, cmd: SubmitCmd, done: CompletionFn) -> bool:
         """Requests that must go through the OS API instead of the wire (like usbip-host)."""

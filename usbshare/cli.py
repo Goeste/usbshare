@@ -38,7 +38,22 @@ def _assign_rules(cli, cfg):
     return rules
 
 
+def _raise_priority() -> None:
+    """Audio (isochronous) needs data on time: run the server above normal priority.
+    Done before any thread starts, so all threads inherit it. Best effort."""
+    try:
+        if sys.platform.startswith("win"):
+            import ctypes
+            k = ctypes.windll.kernel32
+            k.SetPriorityClass(k.GetCurrentProcess(), 0x00000080)   # HIGH_PRIORITY_CLASS
+        else:
+            os.nice(-10)
+    except Exception as e:
+        logging.getLogger("usbshare").debug("could not raise priority: %s", e)
+
+
 def cmd_serve(a) -> int:
+    _raise_priority()
     from .config import ServerConfig
     cfg = ServerConfig.load(a.config)
     if a.host:

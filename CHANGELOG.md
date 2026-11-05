@@ -6,6 +6,17 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.4.7] – 2026-11-05
+
+### Geändert
+- Der Server läuft mit erhöhter Priorität (Linux: nice −10, Windows: „Hoch“), damit
+  Audio-Daten auch bei Last rechtzeitig beim Gerät ankommen.
+
+### Hinzugefügt
+- Diagnose für Audio/Video (isochrone Transfers): Läuft der Datenstrom leer, weil Daten vom
+  Client zu spät kommen, steht das mit der Lückenlänge im Log; beim Trennen gibt es eine
+  Zusammenfassung je Endpoint (Anzahl, Lücken, Paketfehler).
+
 ## [0.4.6] – 2026-11-05
 
 ### Behoben
@@ -116,7 +127,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/Goeste/usbshare/releases/tag/v0.4.7
 [0.4.6]: https://github.com/Goeste/usbshare/releases/tag/v0.4.6
 [0.4.5]: https://github.com/Goeste/usbshare/releases/tag/v0.4.5
 [0.4.4]: https://github.com/Goeste/usbshare/releases/tag/v0.4.4
