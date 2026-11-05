@@ -338,3 +338,89 @@ class RealLibusbBuffers(unittest.TestCase):
         raw = pack_ret_submit(5, UrbResult(0, 18, b"x" * 10), P.USBIP_DIR_IN, -1)
         self.assertEqual(int.from_bytes(raw[24:28], "big"), 10)
         self.assertEqual(len(raw), 48 + 10)
+
+
+class RealIsoTransfer(RealTransfer):
+    def __init__(self, iso_packets):
+        usb1.USBTransfer.__init__(self, None, None, iso_packets, lambda t: None, lambda t: None,
+                                  lambda obj, func, **kw: (lambda: None), False, False)
+        self.submitted = False
+
+    def complete_iso(self, packets):
+        """packets: list of (data_or_None, actual_length) in submit order."""
+        from usb1 import _libusb1 as L
+        tp = self._USBTransfer__transfer
+        buf = self._USBTransfer__transfer_buffer
+        offset = 0
+        for desc, (data, actual) in zip(L.get_iso_packet_list(tp), packets):
+            if data is not None:
+                ctypes.memmove(ctypes.addressof(buf) + offset, data, len(data))
+            desc.actual_length, desc.status = actual, usb1.TRANSFER_COMPLETED
+            offset += desc.length
+        tr = tp.contents
+        tr.status = usb1.TRANSFER_COMPLETED
+        self.getCallback()(self)
+
+
+class RealIsoHandle(Handle):
+    def getTransfer(self, iso_packets=0):
+        t = RealIsoTransfer(iso_packets) if iso_packets else RealTransfer()
+        self.transfers.append(t)
+        return t
+
+
+class RealIsoDev(Dev):
+    def open(self):
+        h = RealIsoHandle(self)
+        self.handles.append(h)
+        return h
+
+
+class RealLibusbIso(unittest.TestCase):
+    """USB audio uses isochronous transfers (headset speaker = OUT, microphone = IN)."""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            usb1.loadLibrary()
+        except Exception as e:  # pragma: no cover
+            raise unittest.SkipTest(f"libusb-1.0 not available: {e}")
+
+    def setUp(self):
+        dev = RealIsoDev([])
+        self.s = LibusbSession(backend_for(dev), dev, reset=False)
+
+    def test_iso_in_microphone(self):
+        from usbshare.protocol import IsoPacket, pack_ret_submit
+        iso = [IsoPacket(i * 96, 96) for i in range(4)]
+        cmd = SubmitCmd(9, 0, P.USBIP_DIR_IN, 2, P.URB_ISO_ASAP, 384, 0, 4, 1, b"\0" * 8, b"", iso)
+        out = []
+        self.s.submit(cmd, lambda seq, r: out.append(r))
+        t = self.s.handle.transfers[-1]
+        t.complete_iso([(b"A" * 96, 96), (b"B" * 90, 90), (b"C" * 96, 96), (None, 0)])
+        r = out[0]
+        self.assertEqual(r.status, 0)
+        self.assertEqual(r.data, b"A" * 96 + b"B" * 90 + b"C" * 96)   # compacted like Linux
+        self.assertEqual(r.actual_length, 282)
+        self.assertEqual([(p.offset, p.length, p.actual_length) for p in r.iso_packets],
+                         [(0, 96, 96), (96, 96, 90), (192, 96, 96), (288, 96, 0)])
+        raw = pack_ret_submit(9, r, P.USBIP_DIR_IN, -1)
+        self.assertEqual(int.from_bytes(raw[32:36], "big"), 4)           # number_of_packets
+        self.assertEqual(len(raw), 48 + 282 + 4 * 16)
+
+    def test_iso_out_speaker(self):
+        from usbshare.protocol import IsoPacket, pack_ret_submit
+        iso = [IsoPacket(i * 192, 192) for i in range(3)]
+        data = bytes(range(256)) * 2 + bytes(64)
+        cmd = SubmitCmd(10, 0, P.USBIP_DIR_OUT, 1, P.URB_ISO_ASAP, 576, 0, 3, 1, b"\0" * 8,
+                        data[:576], iso)
+        out = []
+        self.s.submit(cmd, lambda seq, r: out.append(r))
+        t = self.s.handle.transfers[-1]
+        sent = bytes(t._USBTransfer__transfer_buffer)[:576]
+        self.assertEqual(sent, data[:576])                                # audio reaches the device
+        t.complete_iso([(None, 192)] * 3)
+        r = out[0]
+        self.assertEqual((r.status, r.actual_length, r.data), (0, 576, b""))
+        raw = pack_ret_submit(10, r, P.USBIP_DIR_OUT, -1)
+        self.assertEqual(len(raw), 48 + 3 * 16)                           # no data back for OUT
