@@ -102,12 +102,15 @@ Der Client muss **nicht** als Fenster offen bleiben:
   Anzeigen: Einstellungen → Personalisierung → Taskleiste → Andere Taskleistensymbole →
   usbshare einschalten.
 
-Im Menü **⋯** oben rechts:
+Schalter unten im Fenster (auch im Menü **⋯** oben rechts):
 
-* **Mit Windows starten (im Infobereich)** – startet den Client bei der Anmeldung direkt
-  im Infobereich, ohne UAC-Abfrage.
-* **Beim Schließen im Infobereich weiterlaufen** – ausschalten, wenn das X den Client
-  komplett beenden soll.
+* **Mit Windows starten** – startet den Client bei der Anmeldung direkt im Infobereich,
+  ohne UAC-Abfrage.
+* **Im Infobereich weiterlaufen** – ausschalten, wenn das X den Client komplett beenden
+  soll.
+
+Außerdem im Menü **⋯**:
+
 * **Meldungen anzeigen** – Verlauf aller Ereignisse.
 * **Nach Updates suchen …** – prüft auf GitHub, ob es eine neuere Version gibt, zeigt die
   Änderungen und installiert sie mit „Jetzt aktualisieren“ (Download wird per Prüfsumme

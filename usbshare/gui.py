@@ -362,6 +362,14 @@ class App:
         self.last_msg = ttk.Label(bar, style="Muted.TLabel")
         self.last_msg.pack(side="left")
         ttk.Button(bar, text="Meldungen", command=self.show_log).pack(side="right")
+        # settings visible at a glance (same variables as the entries in the ⋯ menu)
+        ttk.Checkbutton(bar, text="Im Infobereich weiterlaufen", style="Switch.TCheckbutton",
+                        variable=self.to_tray, command=self._toggle_tray).pack(side="right", padx=(0, 16))
+        sw = ttk.Checkbutton(bar, text="Mit Windows starten", style="Switch.TCheckbutton",
+                             variable=self.autostart, command=self._toggle_autostart)
+        sw.pack(side="right", padx=(0, 16))
+        if not autostart_supported():
+            sw.state(["disabled"])
 
     # -- periodic refresh -------------------------------------------------------------
     def _tick(self):

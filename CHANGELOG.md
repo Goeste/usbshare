@@ -6,6 +6,13 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.7.2] – 2026-11-05
+
+### Hinzugefügt
+- Client: Die Einstellungen **„Mit Windows starten“** und **„Im Infobereich
+  weiterlaufen“** sind jetzt als Schalter unten im Fenster zu sehen und dort direkt
+  umschaltbar (bisher nur im Menü ⋯, wo der Zustand kaum erkennbar war).
+
 ## [0.7.1] – 2026-11-05
 
 ### Geändert
@@ -257,7 +264,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/Goeste/usbshare/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Goeste/usbshare/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Goeste/usbshare/releases/tag/v0.7.0
 [0.6.4]: https://github.com/Goeste/usbshare/releases/tag/v0.6.4
