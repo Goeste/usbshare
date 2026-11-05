@@ -6,6 +6,15 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.4.6] – 2026-11-05
+
+### Behoben
+- Verschwindet ein Gerät auf dem Server (abgezogen, abgestürzt oder neu angemeldet – z. B.
+  ein Funk-Headset-Dongle), trennt der Server die Verbindung jetzt sofort. Bisher blieb sie
+  mit einem „toten“ Gerät bestehen, bis der Client sie selbst beendete. Jetzt sieht Windows
+  ein sauberes Abstecken, und „Automatisch verbinden“ bindet das Gerät wieder ein, sobald es
+  zurück ist.
+
 ## [0.4.5] – 2026-11-05
 
 ### Behoben
@@ -107,7 +116,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/Goeste/usbshare/releases/tag/v0.4.6
 [0.4.5]: https://github.com/Goeste/usbshare/releases/tag/v0.4.5
 [0.4.4]: https://github.com/Goeste/usbshare/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Goeste/usbshare/releases/tag/v0.4.3

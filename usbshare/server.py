@@ -547,6 +547,7 @@ class UrbPump:
         self._logged_npk = False
         self._unlinked: Dict[int, int] = {}         # submit seqnum -> unlink seqnum
         self._dead = threading.Event()
+        self._gone = False
 
     def run(self) -> None:
         writer = threading.Thread(target=self._writer, name=f"tx-{self.peer}", daemon=True)
@@ -622,10 +623,23 @@ class UrbPump:
         if pending is None:
             return
         direction, wire_npk = pending
+        if res.status == -P.ESHUTDOWN and not self._gone:
+            # The real device disappeared on the server (unplugged, crashed, re-enumerated).
+            # Drop the connection so the client sees an unplug right away and can attach the
+            # device again once it is back (instead of keeping a dead device forever).
+            self._gone = True
+            log.warning("%s: device disappeared on the server – disconnecting client", self.peer)
+            threading.Timer(0.3, self._hang_up).start()
         if unlink_seq is not None:
             self._send(P.pack_ret_unlink(unlink_seq, -P.ECONNRESET))
         else:
             self._send(P.pack_ret_submit(seqnum, res, direction, wire_npk))
+
+    def _hang_up(self) -> None:
+        try:
+            self.conn.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
 
     def _on_unlink(self, seqnum: int, target: int) -> None:
         with self._lock:

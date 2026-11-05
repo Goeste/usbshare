@@ -45,6 +45,8 @@ class FakeSession(DeviceSession):
                 self.waiting[cmd.seqnum] = (cmd, done)
                 self._serve_waiting()
             return
+        if cmd.endpoint_address == 0x84:                 # device vanished on the server
+            return self._later(done, cmd.seqnum, UrbResult(-P.ESHUTDOWN))
         if cmd.endpoint_address == 0x82 and cmd.iso_packets:
             pk = [IsoPacket(p.offset, p.length, 3, 0) for p in cmd.iso_packets]
             data = b"".join(bytes([i]) * 3 for i in range(len(pk)))
@@ -280,3 +282,22 @@ class SpecCompliance(unittest.TestCase):
 
     def test_linux_style_client_gets_0(self):
         self.assertEqual(self._get_device_descriptor(0), 0)
+
+
+class DeviceGone(unittest.TestCase):
+    def test_client_is_disconnected_when_device_disappears(self):
+        backend = FakeBackend()
+        server = UsbIpServer(backend, "127.0.0.1", 0)
+        server.bind()
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            c = VhciLikeClient(server.port, "1-1")
+            c.submit(4, P.USBIP_DIR_IN, 8)
+            self.assertEqual(c.recv()[2], -P.ESHUTDOWN)        # error reply still arrives
+            c.s.settimeout(3)
+            self.assertEqual(c.s.recv(10), b"")                # then the server hangs up
+            time.sleep(0.2)
+            self.assertTrue(backend.sessions[0].closed)
+            self.assertEqual(server.in_use(), {})              # free for a new attach
+        finally:
+            server.stop()
