@@ -6,6 +6,16 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.6.0] – 2026-11-05
+
+### Hinzugefügt
+- **Audio-Puffer für die Wiedergabe (z. B. Headsets).** Der Server hält den Audio-Strom zum
+  Gerät jetzt lückenlos am Laufen: Es sind immer mehrere Übertragungen beim Gerät
+  eingereiht, verspätete Daten vom Client werden durch Stille überbrückt statt den Strom zu
+  unterbrechen. Funk-Headset-Dongles, die bei Lücken stumm schalten, spielen so weiter.
+  Einstellbar mit `audio_buffer_ms` in `usbshare.toml` bzw. `--audio-buffer MS`
+  (Standard 40 ms, 0 = aus). Das Log zeigt, wie oft mit Stille aufgefüllt wurde.
+
 ## [0.5.2] – 2026-11-05
 
 ### Behoben
@@ -164,7 +174,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Goeste/usbshare/releases/tag/v0.6.0
 [0.5.2]: https://github.com/Goeste/usbshare/releases/tag/v0.5.2
 [0.5.1]: https://github.com/Goeste/usbshare/releases/tag/v0.5.1
 [0.5.0]: https://github.com/Goeste/usbshare/releases/tag/v0.5.0

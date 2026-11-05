@@ -79,7 +79,10 @@ def cmd_serve(a) -> int:
     from .libusb_backend import LibusbBackend
     if a.no_reset:
         cfg.reset_on_attach = False
-    backend = LibusbBackend(use_usbdk=cfg.usbdk, reset=cfg.reset_on_attach)
+    if a.audio_buffer is not None:
+        cfg.audio_buffer_ms = max(0, min(500, a.audio_buffer))
+    backend = LibusbBackend(use_usbdk=cfg.usbdk, reset=cfg.reset_on_attach,
+                            audio_buffer_ms=cfg.audio_buffer_ms)
     server = UsbIpServer(backend, host=cfg.host, port=cfg.port, config=cfg)
     server.bind()
 
@@ -263,6 +266,8 @@ def main(argv=None) -> int:
     s.add_argument("--usbdk", action="store_true",
                    help="Windows: UsbDk statt WinUSB verwenden (kein Zadig nötig)")
     s.add_argument("--config", help="TOML-Konfigurationsdatei (wird angelegt, falls nicht vorhanden)")
+    s.add_argument("--audio-buffer", type=int, metavar="MS",
+                   help="Puffer für Audio-Wiedergabe in ms (Standard 40, 0 = aus)")
     s.add_argument("--no-reset", action="store_true",
                    help="Geräte beim Verbinden/Trennen nicht zurücksetzen")
     s.add_argument("--no-discovery", action="store_true",

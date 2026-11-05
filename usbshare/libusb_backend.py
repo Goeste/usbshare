@@ -15,6 +15,7 @@ import usb1
 
 from . import protocol as P
 from .backend import Backend, BackendError, CompletionFn, DeviceSession
+from .iso_buffer import IsoOutStream, make_stream
 from .protocol import DeviceInfo, IsoPacket, SubmitCmd, UrbResult
 
 log = logging.getLogger("usbshare.libusb")
@@ -115,8 +116,9 @@ def _configs(dev: usb1.USBDevice):
 
 
 class LibusbBackend(Backend):
-    def __init__(self, use_usbdk: bool = False, reset: bool = True):
+    def __init__(self, use_usbdk: bool = False, reset: bool = True, audio_buffer_ms: int = 40):
         self.reset = reset
+        self.audio_buffer_ms = audio_buffer_ms
         self.ctx = usb1.USBContext(use_usbdk=use_usbdk) if use_usbdk else usb1.USBContext()
         self.ctx.open()
         self._stop = threading.Event()
@@ -204,15 +206,20 @@ class LibusbBackend(Backend):
         dev = next((d for d in self._iter() if _busid(d) == busid), None)
         if dev is None:
             raise BackendError(f"no device with busid {busid}", P.ST_NODEV)
-        return LibusbSession(self, dev, reset=self.reset)
+        return LibusbSession(self, dev, reset=self.reset,
+                             audio_buffer_ms=getattr(self, "audio_buffer_ms", 40))
 
     def find(self, busid: str) -> Optional[usb1.USBDevice]:
         return next((d for d in self._iter() if _busid(d) == busid), None)
 
 
 class LibusbSession(DeviceSession):
-    def __init__(self, backend: LibusbBackend, dev: usb1.USBDevice, reset: bool = True):
+    def __init__(self, backend: LibusbBackend, dev: usb1.USBDevice, reset: bool = True,
+                 audio_buffer_ms: int = 40):
         self.backend, self.dev, self.reset = backend, dev, reset
+        self.audio_buffer_ms = audio_buffer_ms
+        self._streams: Dict[int, IsoOutStream] = {}       # isochronous OUT addr -> buffer
+        self._ep_iface: Dict[int, int] = {}
         self.busid = _busid(dev)
         self._lock = threading.Lock()
         self._transfers: Dict[int, usb1.USBTransfer] = {}
@@ -233,6 +240,7 @@ class LibusbSession(DeviceSession):
         self._iso_pkt_kind: Counter = Counter()      # (addr, libusb status) -> packets
         self._iso_silent: Counter = Counter()        # OUT URBs that carried only zeros
         self._ctrl_logged = 0
+        self._stream_stats: List[str] = []
         self._open_and_claim(dev)
         if reset:
             # Put the device into a clean, just-plugged-in state for the client. Some devices
@@ -309,6 +317,7 @@ class LibusbSession(DeviceSession):
 
     def _claim_all(self) -> None:
         self._epmap.clear()
+        self._ep_iface.clear()
         config = self._current_config()
         if config is None:
             return
@@ -318,6 +327,7 @@ class LibusbSession(DeviceSession):
                 number = setting.getNumber()
                 for ep in setting:
                     self._epmap[ep.getAddress()] = ep.getAttributes() & 0x03
+                    self._ep_iface[ep.getAddress()] = number
             if number is None:
                 continue
             try:
@@ -342,10 +352,14 @@ class LibusbSession(DeviceSession):
         addr = cmd.endpoint_address
         is_in = cmd.direction == P.USBIP_DIR_IN
         iso = cmd.iso_packets
+        if iso and not is_in:
+            if cmd.data and cmd.data.count(0) == len(cmd.data):
+                self._iso_silent[addr] += 1
+            if self.audio_buffer_ms > 0:
+                self._stream_for(addr, cmd).feed(cmd, done)
+                return
         if iso:
             self._iso_submitted(addr)
-            if not is_in and cmd.data and cmd.data.count(0) == len(cmd.data):
-                self._iso_silent[addr] += 1
         try:
             t = self.handle.getTransfer(iso_packets=len(iso) if iso else 0)
             if cmd.ep == 0:
@@ -448,6 +462,29 @@ class LibusbSession(DeviceSession):
                 log.warning("%s: endpoint 0x%02x: error %d (%s)", self.busid, addr, res.status,
                             _ERRNAME.get(-res.status, "?"))
 
+    def _stream_for(self, addr: int, cmd: SubmitCmd) -> IsoOutStream:
+        with self._lock:
+            st = self._streams.get(addr)
+            if st is None:
+                hs = self.dev.getDeviceSpeed() >= usb1.SPEED_HIGH
+                st = make_stream(self.handle, addr, cmd, hs, self.audio_buffer_ms,
+                                 f"{self.busid} 0x{addr:02x}")
+                self._streams[addr] = st
+                log.info("%s: Audio-Puffer für Endpoint 0x%02x aktiv (%.0f ms)", self.busid, addr,
+                         st.buffer_ms)
+        return st
+
+    def _stop_streams(self, interface: Optional[int] = None) -> None:
+        with self._lock:
+            victims = [(a, s) for a, s in self._streams.items()
+                       if interface is None or self._ep_iface.get(a, interface) == interface]
+            for a, _s in victims:
+                del self._streams[a]
+        for a, st in victims:
+            st.stop()
+            self._stream_stats.append(f"0x{a:02x}: {st.summary()}")
+            log.info("%s: Audio-Puffer 0x%02x beendet – %s", self.busid, a, st.summary())
+
     def _log_ctrl(self, text: str) -> None:
         if self._ctrl_logged < CONTROL_LOG_LIMIT:
             self._ctrl_logged += 1
@@ -489,8 +526,10 @@ class LibusbSession(DeviceSession):
         errs = ", ".join(f"0x{a:02x}:{_ERRNAME.get(-s, s)}x{n}"
                          for (a, s), n in sorted(self._errors.items())) or "keine"
         iso = self.iso_summary()
+        buf = "; ".join(self._stream_stats)
         return (f"{self._urbs} URBs, Daten von Endpoints: {eps}, Fehler: {errs}"
-                + (f", Audio/Video: {iso}" if iso else ""))
+                + (f", Audio/Video: {iso}" if iso else "")
+                + (f", Audio-Puffer: {buf}" if buf else ""))
 
     def _special_control(self, cmd: SubmitCmd, done: CompletionFn) -> bool:
         """Requests that must go through the OS API instead of the wire (like usbip-host)."""
@@ -498,12 +537,14 @@ class LibusbSession(DeviceSession):
         try:
             if rt == 0x00 and req == 0x09:            # SET_CONFIGURATION
                 if val != self.cfg:
+                    self._stop_streams()
                     self._cancel_all()
                     self._release_all()
                     self.handle.setConfiguration(val)
                     self.cfg = val
                     self._claim_all()
             elif rt == 0x01 and req == 0x0B:          # SET_INTERFACE
+                self._stop_streams(idx)
                 try:
                     self.handle.setInterfaceAltSetting(idx, val)
                 finally:
@@ -518,6 +559,7 @@ class LibusbSession(DeviceSession):
                 # device here instead of sending a hub request to it (it would stall and
                 # Windows would drop the device).
                 log.info("%s: client requested port reset", self.busid)
+                self._stop_streams()
                 self._cancel_all()
                 self._reset_device()
             elif rt == 0x23:
@@ -537,6 +579,11 @@ class LibusbSession(DeviceSession):
         return True
 
     def cancel(self, seqnum: int) -> None:
+        with self._lock:
+            streams = list(self._streams.values())
+        for st in streams:
+            if st.cancel(seqnum):
+                return
         with self._lock:
             t = self._transfers.get(seqnum)
         if t is not None:
@@ -561,6 +608,7 @@ class LibusbSession(DeviceSession):
             time.sleep(0.01)
 
     def close(self) -> None:
+        self._stop_streams()
         self._cancel_all()
         log.info("%s: session ended – %s", self.busid, self.summary())
         if self.reset:

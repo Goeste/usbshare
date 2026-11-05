@@ -212,5 +212,12 @@ beim Client dann nichts an. Nach dem Update: Gerät im Client trennen und neu ve
 Für noch mehr Details den Server mit `-v` starten (Linux: in `/etc/systemd/system/usbshare.service`
 `usbshare -v serve …`, dann `sudo systemctl daemon-reload && sudo systemctl restart usbshare`).
 
+**Headset: Ton stockt oder ist stumm** (z. B. Funk-Dongles): Der Server puffert die
+Audio-Wiedergabe (`audio_buffer_ms = 40` in `usbshare.toml`) und füllt verspätete Daten mit
+Stille auf, damit der Dongle nicht stumm schaltet. Im Log beim Trennen steht
+`Audio-Puffer: … mit Stille aufgefüllt N×`. Ist N hoch, kommen die Daten über das Netzwerk
+zu spät – dann `audio_buffer_ms` erhöhen (z. B. 80; mehr Verzögerung) oder den Server per
+Kabel anbinden. Mit `0` ist der Puffer aus.
+
 **Gerät verträgt den Reset nicht** (sehr selten): in `usbshare.toml`
 `reset_on_attach = false` setzen und den Dienst neu starten.

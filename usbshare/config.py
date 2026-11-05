@@ -38,6 +38,7 @@ class ServerConfig:
     usbdk: bool = False
     discovery: bool = True
     reset_on_attach: bool = True
+    audio_buffer_ms: int = 40
     assign: Dict[str, List[str]] = field(default_factory=dict)
     path: Optional[str] = None
 
@@ -54,6 +55,7 @@ class ServerConfig:
             cfg.usbdk = bool(d.get("usbdk", False))
             cfg.discovery = bool(d.get("discovery", True))
             cfg.reset_on_attach = bool(d.get("reset_on_attach", True))
+            cfg.audio_buffer_ms = max(0, min(500, int(d.get("audio_buffer_ms", 40))))
             cfg.assign = {k: list(v) if isinstance(v, (list, tuple)) else [v]
                           for k, v in d.get("assign", {}).items()}
         return cfg
@@ -102,6 +104,12 @@ discovery = {str(self.discovery).lower()}
 # sauberen Zustand bekommt. Nötig z. B. für Logitech-Unifying/Bolt-Empfänger an Linux.
 # Nur ausschalten, wenn ein Gerät den Reset nicht verträgt (Änderung erst nach Neustart).
 reset_on_attach = {str(self.reset_on_attach).lower()}
+
+# Puffer für Audio-Wiedergabe (z. B. Headsets) in Millisekunden. Hält den Audio-Strom zum
+# Gerät lückenlos, auch wenn Daten über das Netzwerk verspätet ankommen; Lücken werden mit
+# Stille gefüllt. Größer = robuster bei WLAN, aber mehr Verzögerung. 0 = aus.
+# (Änderung erst nach Neustart des Dienstes.)
+audio_buffer_ms = {self.audio_buffer_ms}
 
 # Geräte fest bestimmten Clients zuweisen: Ein zugewiesenes Gerät wird nur diesen
 # Clients angeboten, andere sehen es als "Reserviert".

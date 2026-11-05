@@ -117,6 +117,9 @@ class Handle:
     def releaseInterface(self, n):
         self.log.append(("release", n))
 
+    def setInterfaceAltSetting(self, iface, alt):
+        self.log.append(("altsetting", iface, alt))
+
     def resetDevice(self):
         self.log.append(("reset",))
         if self.dev.reset_raises:
@@ -391,7 +394,7 @@ class RealLibusbIso(unittest.TestCase):
 
     def setUp(self):
         dev = RealIsoDev([])
-        self.s = LibusbSession(backend_for(dev), dev, reset=False)
+        self.s = LibusbSession(backend_for(dev), dev, reset=False, audio_buffer_ms=0)
 
     def test_iso_in_microphone(self):
         from usbshare.protocol import IsoPacket, pack_ret_submit
@@ -472,7 +475,7 @@ class IsoStreamHealth(unittest.TestCase):
 
     def test_detects_stream_running_dry(self):
         dev = RealIsoDev([])
-        s = LibusbSession(backend_for(dev), dev, reset=False)
+        s = LibusbSession(backend_for(dev), dev, reset=False, audio_buffer_ms=0)
         # healthy: client keeps 2 URBs queued
         pending = [self._urb(s, 1), self._urb(s, 2)]
         for i in range(3, 20):
@@ -500,7 +503,7 @@ class IsoPacketErrors(unittest.TestCase):
     def test_missed_packets_reported_like_linux(self):
         from usbshare.protocol import IsoPacket
         dev = RealIsoDev([])
-        s = LibusbSession(backend_for(dev), dev, reset=False)
+        s = LibusbSession(backend_for(dev), dev, reset=False, audio_buffer_ms=0)
         iso = [IsoPacket(i * 96, 96) for i in range(3)]
         cmd = SubmitCmd(1, 0, P.USBIP_DIR_IN, 1, P.URB_ISO_ASAP, 288, 0, 3, 1, b"\0" * 8, b"", iso)
         out = []
@@ -516,10 +519,85 @@ class IsoPacketErrors(unittest.TestCase):
     def test_silence_is_detected(self):
         from usbshare.protocol import IsoPacket
         dev = RealIsoDev([])
-        s = LibusbSession(backend_for(dev), dev, reset=False)
+        s = LibusbSession(backend_for(dev), dev, reset=False, audio_buffer_ms=0)
         for seq, payload in ((1, bytes(192)), (2, b"\x01" * 192)):
             cmd = SubmitCmd(seq, 0, P.USBIP_DIR_OUT, 1, P.URB_ISO_ASAP, 192, 0, 1, 1, b"\0" * 8,
                             payload, [IsoPacket(0, 192)])
             s.submit(cmd, lambda q, r: None)
             s.handle.transfers[-1].complete_iso([(None, 192)])
         self.assertIn("nur Stille 1×", s.summary())
+
+
+class AudioBuffer(unittest.TestCase):
+    """Isochronous OUT jitter buffer: device stays fed, gaps become silence."""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            usb1.loadLibrary()
+        except Exception as e:  # pragma: no cover
+            raise unittest.SkipTest(f"libusb-1.0 not available: {e}")
+
+    def setUp(self):
+        self.dev = RealIsoDev([])
+        self.s = LibusbSession(backend_for(self.dev), self.dev, reset=False, audio_buffer_ms=12)
+        self.done = []
+
+    def _urb(self, seq, fill, n=4, size=192):
+        from usbshare.protocol import IsoPacket
+        iso = [IsoPacket(i * size, size) for i in range(n)]
+        cmd = SubmitCmd(seq, 0, P.USBIP_DIR_OUT, 1, P.URB_ISO_ASAP, n * size, 0, n, 1, b"\0" * 8,
+                        bytes([fill]) * (n * size), iso)
+        self.s.submit(cmd, lambda q, r: self.done.append((q, r)))
+
+    def _device(self):
+        return [t for t in self.s.handle.transfers if t.submitted]
+
+    @staticmethod
+    def _payload(t):
+        return bytes(t._USBTransfer__transfer_buffer)
+
+    def test_device_queue_and_completion_on_handoff(self):
+        self._urb(1, 1)                       # 4 packets = 1 transfer, depth 3 (12 ms / 4 ms)
+        dev = self._device()
+        self.assertEqual(len(dev), 3)          # device queue filled right away
+        self.assertEqual(self._payload(dev[0])[:192], b"\x01" * 192)
+        self.assertEqual(self._payload(dev[1]), bytes(4 * 192))      # silence after the data
+        self.assertEqual([q for q, _ in self.done], [1])              # completed on hand-off
+        r = self.done[0][1]
+        self.assertEqual((r.status, r.actual_length, r.error_count), (0, 768, 0))
+        self._urb(2, 2)
+        self._urb(3, 3)
+        self.assertEqual(len(self._device()), 3)                       # nothing more until one
+        dev[0].complete_iso([(None, 192)] * 4)                         # plays on the device
+        self.assertEqual(len(self._device()), 4)
+        self.assertEqual(self._payload(self._device()[-1])[:192], b"\x02" * 192)
+        self.assertEqual([q for q, _ in self.done], [1, 2])
+
+    def test_underrun_inserts_silence_instead_of_gap(self):
+        self._urb(1, 1)
+        for t in list(self._device()):
+            t.complete_iso([(None, 192)] * 4)                         # device keeps playing
+        self.assertGreaterEqual(len(self._device()), 6)               # always resubmitted
+        st = self.s._streams[0x01]
+        self.assertGreaterEqual(st.silence_packets, 8)
+        self.assertEqual(st.underruns, 1)
+
+    def test_unlink_of_queued_urb(self):
+        self._urb(1, 1)
+        self._urb(2, 2)                         # still in the FIFO (device queue is full)
+        self.s.cancel(2)
+        self.assertEqual(self.done[-1][0], 2)
+        self.assertEqual(self.done[-1][1].status, -P.ECONNRESET)
+
+    def test_set_interface_stops_stream(self):
+        self._urb(1, 1)
+        self._urb(2, 2)
+        setup = bytes([0x01, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])   # if 0 -> alt 0
+        out = []
+        self.s.submit(SubmitCmd(9, 0, P.USBIP_DIR_OUT, 0, 0, 0, 0, 0, 0, setup),
+                      lambda q, r: out.append(r))
+        self.assertEqual(out[0].status, 0)
+        self.assertNotIn(0x01, self.s._streams)
+        self.assertEqual(dict(self.done)[2].status, -P.ECONNRESET)     # pending one cancelled
+        self.assertIn("Audio-Puffer", self.s.summary())
