@@ -8,7 +8,6 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
-import webbrowser
 from tkinter import messagebox, ttk
 from typing import Optional
 
@@ -21,7 +20,6 @@ from .ui_common import (IS_WIN, SingleInstance, Tray, UiQueue, apply_theme, dark
 ALL = "__all__"
 TASK_NAME = "usbshare-client"
 INSTANCE_PORT = 47321
-USBIP_WIN2_URL = "https://github.com/vadimgrn/usbip-win2/releases"
 
 STATE_TEXT = {
     "mine": "●  Verbunden",
@@ -266,7 +264,7 @@ class App:
                           command=self._toggle_tray)
         m.add_separator()
         m.add_command(label="Nach Updates suchen …", command=self.check_updates)
-        m.add_command(label="usbip-win2 herunterladen …", command=lambda: webbrowser.open(USBIP_WIN2_URL))
+        m.add_command(label="usbip-win2 installieren / aktualisieren …", command=self.install_driver)
         m.add_command(label=f"Über usbshare {__version__}", command=lambda: messagebox.showinfo(
             "usbshare", f"usbshare Client {__version__}\nUSB-Geräte über das Netzwerk nutzen.\n\n"
             f"© 2026 {__author__}\n{__url__}\nLizenz: GNU GPL v3 oder neuer – freie Software, "
@@ -275,13 +273,14 @@ class App:
         m.add_command(label="Beenden", command=self.quit)
         mb["menu"] = m
 
+        self.banner = None
         if not self.c.usbip:
-            ban = ttk.Frame(self.root, style="Banner.TFrame", padding=(14, 10))
+            ban = self.banner = ttk.Frame(self.root, style="Banner.TFrame", padding=(14, 10))
             ban.pack(fill="x", padx=18, pady=(4, 0))
             ttk.Label(ban, style="Banner.TLabel",
                       text="⚠  usbip-win2 ist nicht installiert – Geräte werden angezeigt, können aber "
                            "nicht verbunden werden.").pack(side="left")
-            ttk.Button(ban, text="Herunterladen", command=lambda: webbrowser.open(USBIP_WIN2_URL)).pack(side="right")
+            ttk.Button(ban, text="Installieren", command=self.install_driver).pack(side="right")
 
     def _build_body(self):
         body = ttk.Frame(self.root, padding=(18, 10, 18, 0))
@@ -514,6 +513,17 @@ class App:
     def show(self):
         show_window(self.root)
 
+    def install_driver(self):
+        from .update_ui import DriverDialog
+        DriverDialog(self.root, on_installed=self._driver_installed)
+
+    def _driver_installed(self):
+        from .client import find_usbip_tool
+        self.c.usbip = self.c.usbip or find_usbip_tool()
+        if self.c.usbip and self.banner is not None:
+            self.banner.destroy()
+            self.banner = None
+
     def check_updates(self):
         from .update_ui import UpdateDialog
         UpdateDialog(self.root, "client", "usbshare Client", on_installed=self.quit)
@@ -654,7 +664,7 @@ def main(argv=None) -> int:
         inst.notify_running()          # bring the running client to the front
         return 0
     if after_update:
-        from .update_ui import cleanup_old_exe
+        from .updater import cleanup_old_exe
         cleanup_old_exe()
     settings = Settings(os.environ.get("USBSHARE_CLIENT_CONFIG"))
     root = tk.Tk()

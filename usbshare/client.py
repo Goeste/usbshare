@@ -1,20 +1,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Goeste – usbshare (siehe LICENSE und NOTICE)
-"""Client-side helpers: query a server and auto-attach devices via the OS usbip tool."""
+"""Client-side helpers: query servers, discovery, locate the usbip tool."""
 from __future__ import annotations
 
 import logging
 import os
 import shutil
 import socket
-import subprocess
 import sys
 import time
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from . import protocol as P
 from .protocol import DeviceInfo
-from .server import DeviceFilter, recv_exact
+from .server import recv_exact
 
 log = logging.getLogger("usbshare.client")
 
@@ -52,27 +51,6 @@ def find_usbip_tool() -> Optional[str]:
     return None
 
 
-def ensure_vhci() -> None:
-    if sys.platform.startswith("linux") and not os.path.exists("/sys/devices/platform/vhci_hcd.0"):
-        modprobe = shutil.which("modprobe") or "/sbin/modprobe"
-        try:
-            subprocess.run([modprobe, "vhci-hcd"], check=False)
-        except OSError as e:
-            log.warning("could not load vhci-hcd (%s); run 'modprobe vhci-hcd' as root", e)
-
-
-def attach(tool: str, host: str, port: int, busid: str) -> bool:
-    cmd = [tool]
-    if port != P.DEFAULT_PORT:
-        cmd += ["--tcp-port", str(port)]
-    cmd += ["attach", "-r", host, "-b", busid]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0:
-        log.warning("attach %s failed: %s", busid, (r.stderr or r.stdout).strip())
-        return False
-    return True
-
-
 def parse_server(spec: str, default_port: int = P.DEFAULT_PORT) -> Tuple[str, int]:
     """'host', 'host:port', '[v6addr]:port' -> (host, port)"""
     if spec.startswith("["):
@@ -82,39 +60,6 @@ def parse_server(spec: str, default_port: int = P.DEFAULT_PORT) -> Tuple[str, in
         host, port = spec.split(":")
         return host, int(port)
     return spec, default_port
-
-
-def attach_loop(servers: Sequence[str], default_port: int, wanted: DeviceFilter, watch: bool,
-                interval: float = 3.0) -> int:
-    tool = find_usbip_tool()
-    if not tool:
-        log.error("usbip tool not found. Linux: install 'usbip' (Debian/Ubuntu: "
-                  "apt install usbip / linux-tools-generic). Windows: install usbip-win2.")
-        return 2
-    ensure_vhci()
-    targets = [parse_server(s, default_port) for s in servers]
-    online: Dict[Tuple[str, int], bool] = {}
-    while True:
-        failed = False
-        for host, port in targets:
-            name = f"{host}:{port}"
-            try:
-                devs = remote_devlist(host, port)
-            except OSError as e:
-                failed = True
-                if online.get((host, port)) is not False:
-                    log.warning("server %s not reachable: %s", name, e)
-                online[(host, port)] = False
-                continue
-            if online.get((host, port)) is not True:
-                log.info("server %s reachable", name)
-            online[(host, port)] = True
-            for dev in devs:
-                if wanted.permits(dev) and attach(tool, host, port, dev.busid):
-                    log.info("attached %s (%s) from %s", dev.busid, dev.vidpid, name)
-        if not watch:
-            return 1 if failed else 0
-        time.sleep(interval)
 
 
 # -- usbshare extensions -------------------------------------------------------

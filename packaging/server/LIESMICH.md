@@ -7,6 +7,9 @@
 Läuft auf dem Rechner, an dem die USB-Geräte **eingesteckt** sind, und bietet sie im
 Netzwerk an. Die VM bindet sie mit dem **usbshare Client** ein (Paket `usbshare-client`).
 
+Pakete: `usbshare-server-<version>-linux.zip` (Linux) und
+`usbshare-windows-server-<version>.zip` (Windows).
+
 Am Server legst du fest:
 
 * **welche Geräte** freigegeben werden,
@@ -20,7 +23,7 @@ Das geht bequem im Fenster **usbshare Server** (siehe unten) oder in der Datei
 
 ### Windows
 
-1. Ordner `windows` auf den Rechner kopieren.
+1. `usbshare-windows-server-<version>.zip` entpacken.
 2. **Treiber**: Windows lässt Programme nicht ohne Weiteres auf USB-Geräte zugreifen.
    * Empfohlen: **UsbDk** installieren (github.com/daynix/UsbDk/releases, `UsbDk_*_x64.msi`).
      Funktioniert mit allen Geräten, ohne Treiber zu tauschen.
@@ -164,8 +167,12 @@ nach wenigen Sekunden übernommen; `host`, `port` und `usbdk` erst nach Neustart
   Geräte werden dabei kurz getrennt). `usbshare update --check` zeigt nur, ob es ein Update
   gibt. Im Server-Fenster: Knopf **„Nach Updates suchen“** → „Jetzt aktualisieren“ (Linux
   fragt nach deinem Passwort). Die Konfiguration bleibt erhalten.
-* **Windows:** Das Server-Fenster zeigt über „Nach Updates suchen“ neue Versionen an.
-  Installiert wird über das neue Paket: entpacken und `install-service.ps1` erneut ausführen.
+* **Windows:** im Server-Fenster **„Nach Updates suchen“** → „Jetzt aktualisieren“
+  (Windows fragt nach Administratorrechten) oder in einer Eingabeaufforderung **als
+  Administrator**: `"C:\Program Files\usbshare\usbshare.exe" update`. Lädt das
+  Windows-Paket, prüft die Prüfsumme, testet das neue Programm, ersetzt `usbshare.exe` und
+  `usbshare-server-gui.exe` und startet den Dienst neu. Die Konfiguration bleibt erhalten.
+  (Ein neues Paket per `install-service.ps1` zu installieren geht weiterhin.)
 
 ## Kommandozeile
 
@@ -173,7 +180,7 @@ nach wenigen Sekunden übernommen; `host`, `port` und `usbdk` erst nach Neustart
 usbshare list                  # lokale USB-Geräte
 usbshare remote 127.0.0.1      # Geräte mit Status (frei / belegt von … / reserviert)
 usbshare release 1-4           # Gerät vom Client lösen
-sudo usbshare update           # auf die neueste Version aktualisieren (Linux)
+sudo usbshare update           # auf die neueste Version aktualisieren (Windows: als Administrator)
 usbshare gui                   # Server-Fenster (Linux; Windows: usbshare-server-gui.exe)
 ```
 

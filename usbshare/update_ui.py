@@ -15,6 +15,7 @@ from typing import Callable, Optional
 
 from . import __version__
 from . import updater as U
+from .updater import clean_environment
 from .gui import Dialog
 
 IS_WIN = sys.platform.startswith("win")
@@ -46,27 +47,6 @@ def install_windows_exe(rel: U.Release, kind: str, member: str,
                      env=clean_environment())
 
 
-def clean_environment() -> dict:
-    """Environment for starting the *new* program version from the running one.
-
-    A PyInstaller one-file program passes variables to its children so that they reuse its
-    unpacked files (_MEI… temp folder). The new version must not do that: the old one deletes
-    that folder when it exits ("Can't find a usable tk.tcl")."""
-    env = {k: v for k, v in os.environ.items()
-           if not k.startswith(("_PYI", "_MEI")) and k not in ("TCL_LIBRARY", "TK_LIBRARY")}
-    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
-    return env
-
-
-def cleanup_old_exe() -> None:
-    exe = U.frozen_executable()
-    if exe and os.path.exists(exe + ".old"):
-        try:
-            os.remove(exe + ".old")
-        except OSError:
-            pass
-
-
 def install_linux_server(rel: U.Release, progress: Callable[[int, int], None]) -> None:
     """Run `usbshare update --yes` with root rights via pkexec (graphical password prompt)."""
     exe = U.frozen_executable()
@@ -81,6 +61,68 @@ def install_linux_server(rel: U.Release, progress: Callable[[int, int], None]) -
         raise U.UpdateError("Abgebrochen (keine Berechtigung erteilt).")
     if r.returncode != 0:
         raise U.UpdateError((r.stderr or r.stdout).strip() or f"Fehlercode {r.returncode}")
+
+
+def run_elevated(exe: str, params: str) -> int:
+    """Windows: start a program with administrator rights (UAC prompt), wait for it and
+    return its exit code. Raises UpdateError if the user declines."""
+    import ctypes
+    from ctypes import wintypes
+
+    class SHELLEXECUTEINFOW(ctypes.Structure):
+        _fields_ = [("cbSize", wintypes.DWORD), ("fMask", ctypes.c_ulong),
+                    ("hwnd", wintypes.HWND), ("lpVerb", wintypes.LPCWSTR),
+                    ("lpFile", wintypes.LPCWSTR), ("lpParameters", wintypes.LPCWSTR),
+                    ("lpDirectory", wintypes.LPCWSTR), ("nShow", ctypes.c_int),
+                    ("hInstApp", wintypes.HINSTANCE), ("lpIDList", ctypes.c_void_p),
+                    ("lpClass", wintypes.LPCWSTR), ("hkeyClass", wintypes.HKEY),
+                    ("dwHotKey", wintypes.DWORD), ("hIcon", wintypes.HANDLE),
+                    ("hProcess", wintypes.HANDLE)]
+    info = SHELLEXECUTEINFOW(cbSize=ctypes.sizeof(SHELLEXECUTEINFOW), fMask=0x40,  # NOCLOSEPROCESS
+                             lpVerb="runas", lpFile=exe, lpParameters=params,
+                             lpDirectory=os.path.dirname(exe), nShow=0)
+    shell32, kernel32 = ctypes.windll.shell32, ctypes.windll.kernel32
+    shell32.ShellExecuteExW.argtypes = [ctypes.POINTER(SHELLEXECUTEINFOW)]
+    if not shell32.ShellExecuteExW(ctypes.byref(info)):
+        if ctypes.GetLastError() == 1223:                                   # ERROR_CANCELLED
+            raise U.UpdateError("Abgebrochen (keine Administratorrechte erteilt).")
+        raise U.UpdateError(f"Konnte {os.path.basename(exe)} nicht starten "
+                            f"(Fehler {ctypes.GetLastError()}).")
+    kernel32.WaitForSingleObject(info.hProcess, 0xFFFFFFFF)
+    code = wintypes.DWORD()
+    kernel32.GetExitCodeProcess(info.hProcess, ctypes.byref(code))
+    kernel32.CloseHandle(info.hProcess)
+    return code.value
+
+
+def install_windows_server(rel: U.Release, progress: Callable[[int, int], None]) -> None:
+    """Run `usbshare.exe update --yes` (next to this window's program) as administrator. It
+    replaces usbshare.exe and usbshare-server-gui.exe and restarts the service."""
+    exe = U.frozen_executable()
+    if not exe:
+        raise U.UpdateError("Aus dem Quellcode gestartet – bitte mit git aktualisieren.")
+    server = os.path.join(os.path.dirname(exe), "usbshare.exe")
+    if not os.path.exists(server):
+        raise U.UpdateError(f"usbshare.exe fehlt in {os.path.dirname(exe)}.")
+    progress(0, 0)
+    import tempfile
+    fd, report = tempfile.mkstemp(prefix="usbshare-update-", suffix=".txt")
+    os.close(fd)
+    try:
+        rc = run_elevated(server, f'update --yes --report "{report}"')
+        try:
+            with open(report, encoding="utf-8", errors="replace") as f:
+                text = f.read().strip()
+        except OSError:
+            text = ""
+    finally:
+        try:
+            os.remove(report)
+        except OSError:
+            pass
+    if rc != 0:
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        raise U.UpdateError(lines[-1] if lines else f"Fehlercode {rc}")
 
 
 # -- dialog ----------------------------------------------------------------------------------
@@ -158,8 +200,7 @@ class UpdateDialog(Dialog):
         if self.kind == "client":
             return (True, "") if IS_WIN else (False, "")
         if IS_WIN:
-            return False, ("Den Windows-Server bitte über die Release-Seite aktualisieren "
-                           "(Paket herunterladen, install-service.ps1 erneut ausführen).")
+            return True, "Für die Installation fragt Windows nach Administratorrechten."
         return True, "Für die Installation fragt Linux nach deinem Passwort."
 
     def _show_error(self, msg: str):
@@ -183,6 +224,8 @@ class UpdateDialog(Dialog):
             try:
                 if self.kind == "client":
                     install_windows_exe(self.rel, "client", "/usbshare-client.exe", progress)
+                elif IS_WIN:
+                    install_windows_server(self.rel, progress)
                 else:
                     install_linux_server(self.rel, progress)
             except U.UpdateError as e:
@@ -214,5 +257,123 @@ class UpdateDialog(Dialog):
 
     def _finish(self):
         self.destroy()
+        if self.on_installed:
+            self.on_installed()
+
+
+class DriverDialog(Dialog):
+    """Install or update usbip-win2 (bundled installer, or the newest one from GitHub)."""
+
+    def __init__(self, parent, on_installed: Optional[Callable] = None):
+        from . import driver
+        super().__init__(parent, "usbip-win2")
+        self.driver, self.on_installed = driver, on_installed
+        self.inst = None
+        b = self.body
+        ttk.Label(b, text="usbip-win2 – USB/IP-Treiber für Windows", style="Section.TLabel").pack(anchor="w")
+        self.status = ttk.Label(b, text="Prüfe usbip-win2 …", style="Muted.TLabel", wraplength=520,
+                                justify="left")
+        self.status.pack(anchor="w", pady=(2, 10))
+        self.bar = ttk.Progressbar(b, mode="indeterminate", maximum=100)
+        self.bar.pack(fill="x", pady=(4, 0))
+        self.bar.start(12)
+        btns = ttk.Frame(b)
+        btns.pack(fill="x", pady=(14, 0))
+        self.btns = btns
+        self.b_close = ttk.Button(btns, text="Schließen", command=self.destroy)
+        self.b_close.pack(side="right")
+        self.b_install = ttk.Button(btns, text="Installieren", style="Accent.TButton",
+                                    command=self._install)
+        self.b_reboot = ttk.Button(btns, text="Jetzt neu starten", style="Accent.TButton",
+                                   command=driver.reboot)
+        ttk.Button(btns, text="Projektseite öffnen",
+                   command=lambda: webbrowser.open(driver.RELEASES_PAGE)).pack(side="left")
+        threading.Thread(target=self._check, daemon=True).start()
+        self.run()
+
+    def _ui(self, fn, *args):
+        try:
+            self.after(0, fn, *args)
+        except (tk.TclError, RuntimeError):
+            pass
+
+    def _check(self):
+        d = self.driver
+        installed, local = d.installed_version(), d.bundled()
+        online = d.latest_online()
+        self._ui(self._show, installed, d.choose(installed, local, online), online is not None)
+
+    def _show(self, installed, inst, checked_online):
+        self.inst = inst
+        self.bar.stop()
+        self.bar.pack_forget()
+        have = ("nicht installiert" if installed is None
+                else f"Version {installed} installiert" if installed else "installiert")
+        if inst is None:
+            text = f"usbip-win2 ist {have}." if installed is None else f"usbip-win2: {have} – aktuell."
+            if installed is None:
+                text += ("\nKein Installationsprogramm gefunden und GitHub nicht erreichbar – "
+                         "bitte über die Projektseite installieren.")
+            elif not checked_online:
+                text = f"usbip-win2: {have}. (GitHub nicht erreichbar – keine neuere Version geprüft.)"
+            self.status.configure(text=text)
+            return
+        verb = "Installieren" if installed is None else "Aktualisieren"
+        self.status.configure(text=(
+            f"usbip-win2: {have}. Verfügbar: Version {inst.version} ({inst.label}).\n"
+            "Die Installation läuft ohne Rückfragen. Dabei werden alle USB-Geräte dieses "
+            "Rechners kurz getrennt; danach muss Windows neu gestartet werden."))
+        self.b_install.configure(text=verb)
+        self.b_install.pack(side="right", padx=8)
+
+    def _install(self):
+        self.b_install.state(["disabled"])
+        self.b_close.state(["disabled"])
+        self.bar.configure(mode="determinate", value=0)
+        self.bar.pack(fill="x", pady=(4, 0), before=self.btns)
+        self.status.configure(text="Lade herunter und prüfe …" if self.inst.source == "github"
+                              else "Prüfe Installationsprogramm …", style="Muted.TLabel")
+
+        def progress(done, total):
+            if total:
+                self._ui(self.bar.configure, {"mode": "determinate", "value": done * 100 / total})
+
+        def work():
+            try:
+                path = self.driver.fetch(self.inst, progress)
+                self._ui(self._installing)
+                self.driver.run_installer(path)
+            except U.UpdateError as e:
+                self._ui(self._failed, str(e))
+                return
+            except Exception as e:  # pragma: no cover
+                self._ui(self._failed, f"Unerwarteter Fehler: {e}")
+                return
+            self._ui(self._done)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _installing(self):
+        self.status.configure(text=f"Installiere usbip-win2 {self.inst.version} … "
+                                   "(USB-Geräte werden kurz getrennt)")
+        self.bar.configure(mode="indeterminate")
+        self.bar.start(12)
+
+    def _failed(self, msg: str):
+        self.bar.stop()
+        self.bar.pack_forget()
+        self.status.configure(text=f"Installation fehlgeschlagen: {msg}", style="Err.TLabel")
+        self.b_close.state(["!disabled"])
+        self.b_install.state(["!disabled"])
+
+    def _done(self):
+        self.bar.stop()
+        self.bar.pack_forget()
+        self.b_install.pack_forget()
+        self.status.configure(text=f"usbip-win2 {self.inst.version} ist installiert. Windows muss "
+                                   "neu gestartet werden, damit der Treiber geladen wird.",
+                              style="Ok.TLabel")
+        self.b_close.configure(text="Später")
+        self.b_close.state(["!disabled"])
+        self.b_reboot.pack(side="right", padx=8)
         if self.on_installed:
             self.on_installed()

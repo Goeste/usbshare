@@ -6,6 +6,31 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.7.0] – 2026-11-05
+
+### Hinzugefügt
+- **usbip-win2 im Client-Paket.** Das Client-Paket enthält das Setup des Treibers
+  usbip-win2 (Ordner `usbip-win2`, BSD-2-Clause). Fehlt der Treiber, installiert ihn der
+  Client per Klick auf „Installieren“ ohne Rückfragen und bietet danach den nötigen Neustart
+  an. Ist auf GitHub eine neuere Version verfügbar oder fehlt das mitgelieferte Setup, wird
+  sie heruntergeladen und gegen die SHA-256-Prüfsumme von GitHub geprüft. Menü ⋯ →
+  „usbip-win2 installieren / aktualisieren …“ zeigt installierte und verfügbare Version.
+- **Eigenes Windows-Server-Paket** `usbshare-windows-server-<version>.zip` mit Update per
+  Klick: „Nach Updates suchen“ → „Jetzt aktualisieren“ im Server-Fenster bzw.
+  `usbshare update` als Administrator ersetzt `usbshare.exe` und `usbshare-server-gui.exe`,
+  testet die neue Version vorher und startet den Dienst neu.
+
+### Geändert
+- **Deutlich kleinere Programme:** Windows-Server 21,7 → 8,5 MB, Client 20,6 → 11,1 MB,
+  Server-Fenster 20,6 → 11,1 MB, Linux-Server ca. 37 → 13,5 MB. Die Symbole liegen jetzt
+  fertig bei (kein Pillow mehr zur Laufzeit), der Infobereich nutzt direkt die
+  Windows-Funktionen (kein pystray mehr), nicht benötigte Teile von Python werden nicht
+  mehr mitgeliefert, der Windows-Server enthält keine Oberflächen-Bibliotheken.
+- Das Linux-Server-Paket heißt jetzt `usbshare-server-<version>-linux.zip` und enthält nur
+  noch Linux. Ältere Versionen finden es beim Update weiterhin.
+- Die Kommandozeile `usbshare attach` wurde entfernt (das Einbinden übernimmt der
+  Windows-Client; unter Linux `usbip attach` bzw. das Skript in `contrib/linux-client`).
+
 ## [0.6.4] – 2026-11-05
 
 ### Behoben
@@ -219,7 +244,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.4...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Goeste/usbshare/releases/tag/v0.7.0
 [0.6.4]: https://github.com/Goeste/usbshare/releases/tag/v0.6.4
 [0.6.3]: https://github.com/Goeste/usbshare/releases/tag/v0.6.3
 [0.6.2]: https://github.com/Goeste/usbshare/releases/tag/v0.6.2

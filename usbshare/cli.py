@@ -12,7 +12,9 @@ import sys
 
 from . import __author__, __url__, __version__
 from . import protocol as P
-from .server import DeviceFilter, UsbIpServer
+from .server import UsbIpServer
+
+IS_WIN = sys.platform.startswith("win")
 
 SPEED_NAMES = {1: "1.5M", 2: "12M", 3: "480M", 5: "5G", 6: "10G"}
 
@@ -55,6 +57,9 @@ def _raise_priority() -> None:
 
 def cmd_serve(a) -> int:
     _raise_priority()
+    if IS_WIN:
+        from .updater import cleanup_old_exe
+        cleanup_old_exe()                  # left over from a self-update
     from .config import ServerConfig
     cfg = ServerConfig.load(a.config)
     if a.host:
@@ -157,14 +162,102 @@ def cmd_release(a) -> int:
     return 0 if status == P.ST_OK else 1
 
 
-def cmd_attach(a) -> int:
-    from .client import attach_loop
-    return attach_loop(a.servers, a.port, DeviceFilter(allow=a.device or []), watch=a.watch,
-                       interval=a.interval)
+def cmd_gui(a) -> int:
+    try:
+        from .server_gui import main
+    except ImportError:
+        # Windows: the console server is built without Tk, the window is its own program
+        import subprocess
+        from .updater import frozen_executable
+        exe = frozen_executable()
+        gui = os.path.join(os.path.dirname(exe), "usbshare-server-gui.exe") if exe else ""
+        if not os.path.exists(gui):
+            print("Das Server-Fenster ist nicht enthalten (usbshare-server-gui.exe fehlt).")
+            return 2
+        subprocess.Popen([gui, "--port", str(a.port)], close_fds=True)
+        return 0
+    return main(["--port", str(a.port)])
+
+
+def _is_admin() -> bool:
+    try:
+        import ctypes
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+
+def _starts(path: str, version: str) -> bool:
+    import subprocess
+    try:
+        out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=60,
+                             creationflags=0x08000000 if IS_WIN else 0)       # CREATE_NO_WINDOW
+        return version in out.stdout + out.stderr
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _update_windows(rel, zf, target: str) -> int:
+    """Windows server: replace usbshare.exe and usbshare-server-gui.exe next to it, then
+    restart the 'usbshare' scheduled task. Running programs can be renamed (not deleted), so
+    the old files become *.old and are removed on the next start."""
+    import subprocess
+    from . import updater as U
+    folder = os.path.dirname(target)
+    files = {"usbshare.exe": U.extract_member(zf, "/usbshare.exe")}
+    try:
+        files["usbshare-server-gui.exe"] = U.extract_member(zf, "/usbshare-server-gui.exe")
+    except U.UpdateError:
+        pass
+    test = os.path.join(folder, "usbshare-new.exe")
+    with open(test, "wb") as f:
+        f.write(files["usbshare.exe"])
+    if not _starts(test, rel.version):
+        os.remove(test)
+        print("Die neue Version startet auf diesem System nicht – Update abgebrochen, "
+              "die bisherige Version bleibt.", file=sys.stderr)
+        return 2
+    os.remove(test)
+    hide = {"creationflags": 0x08000000, "capture_output": True}
+    task = subprocess.run(["schtasks", "/Query", "/TN", "usbshare"], **hide).returncode == 0
+    if task:
+        subprocess.run(["schtasks", "/End", "/TN", "usbshare"], **hide)
+    # the server itself (one-file programs run as two processes – spare our own pair)
+    subprocess.run(["taskkill", "/F", "/FI", "IMAGENAME eq usbshare.exe",
+                    "/FI", f"PID ne {os.getpid()}", "/FI", f"PID ne {os.getppid()}"], **hide)
+    replaced = []
+    try:
+        for name, data in files.items():
+            path = os.path.join(folder, name)
+            U.cleanup_old_exe(path)
+            if os.path.exists(path):
+                os.replace(path, path + ".old")
+            with open(path + ".tmp", "wb") as f:
+                f.write(data)
+            os.replace(path + ".tmp", path)
+            replaced.append(path)
+    except OSError as e:
+        for path in replaced:                  # put the old version back
+            try:
+                os.replace(path + ".old", path)
+            except OSError:
+                pass
+        print(f"Programmdatei konnte nicht ersetzt werden: {e}", file=sys.stderr)
+        if task:
+            subprocess.run(["schtasks", "/Run", "/TN", "usbshare"], **hide)
+        return 2
+    print(f"{folder} aktualisiert auf {rel.version}.")
+    if task:
+        subprocess.run(["schtasks", "/Run", "/TN", "usbshare"], **hide)
+        print("Dienst usbshare neu gestartet. Verbundene Geräte werden kurz getrennt.")
+    print("Fertig.")
+    return 0
 
 
 def cmd_update(a) -> int:
-    """Update the installed server binary from the latest GitHub release (Linux)."""
+    """Update the installed server from the latest GitHub release (Linux and Windows)."""
+    if getattr(a, "report", None):          # elevated run from the server window: no console
+        sys.stdout = sys.stderr = open(a.report, "w", encoding="utf-8", buffering=1)
     import shutil
     import subprocess
     import tempfile
@@ -183,16 +276,19 @@ def cmd_update(a) -> int:
     print(U.short_notes(rel.notes))
     print()
     if a.check:
-        print(f"Update verfügbar: {rel.version} – installieren mit: sudo usbshare update")
+        print(f"Update verfügbar: {rel.version} – installieren mit: "
+              + ("usbshare update (als Administrator)" if IS_WIN else "sudo usbshare update"))
         return 10
-    if sys.platform.startswith("win"):
-        print(f"Unter Windows bitte das Paket herunterladen: {rel.page}")
-        return 1
     target = U.frozen_executable()
     if not target:
         print("Diese usbshare-Version läuft aus dem Quellcode – bitte mit git aktualisieren.")
         return 1
-    if os.geteuid() != 0:
+    if IS_WIN:
+        if not _is_admin():
+            print("Für das Update werden Administratorrechte gebraucht "
+                  "(Eingabeaufforderung „Als Administrator ausführen“).", file=sys.stderr)
+            return 1
+    elif os.geteuid() != 0:
         print("Für das Update werden Root-Rechte gebraucht: sudo usbshare update", file=sys.stderr)
         return 1
     if not a.yes:
@@ -214,6 +310,8 @@ def cmd_update(a) -> int:
     try:
         zf = U.download_package(rel, "server", progress)
         print("\rDownload geprüft (SHA-256 stimmt).      ")
+        if IS_WIN:
+            return _update_windows(rel, zf, target)
         binary = U.extract_member(zf, "/linux/usbshare")
     except U.UpdateError as e:
         print(f"\nFehler: {e}", file=sys.stderr)
@@ -222,13 +320,9 @@ def cmd_update(a) -> int:
     with open(new, "wb") as f:
         f.write(binary)
     os.chmod(new, 0o755)
-    try:
-        out = subprocess.run([new, "--version"], capture_output=True, text=True, timeout=60)
-        if rel.version not in (out.stdout + out.stderr):
-            raise RuntimeError((out.stdout + out.stderr).strip() or f"Exit-Code {out.returncode}")
-    except Exception as e:
+    if not _starts(new, rel.version):
         os.unlink(new)
-        print(f"Die neue Version startet auf diesem System nicht ({e}) – Update abgebrochen, "
+        print("Die neue Version startet auf diesem System nicht – Update abgebrochen, "
               "die bisherige Version bleibt.", file=sys.stderr)
         return 2
     os.replace(new, target)                     # atomic; the running process keeps the old file
@@ -295,13 +389,13 @@ def main(argv=None) -> int:
 
     g = sub.add_parser("gui", help="Server-Fenster öffnen (Geräte freigeben und zuweisen)")
     g.add_argument("--port", type=int, default=P.DEFAULT_PORT)
-    g.set_defaults(fn=lambda a: __import__("usbshare.server_gui", fromlist=["main"]).main(
-        ["--port", str(a.port)]))
+    g.set_defaults(fn=cmd_gui)
 
-    up = sub.add_parser("update", help="auf die neueste Version aktualisieren (Linux-Server)")
+    up = sub.add_parser("update", help="auf die neueste Version aktualisieren")
     up.add_argument("--check", action="store_true", help="nur prüfen, ob es ein Update gibt")
     up.add_argument("--yes", "-y", action="store_true", help="ohne Rückfrage installieren")
     up.add_argument("--force", action="store_true", help="auch installieren, wenn schon aktuell")
+    up.add_argument("--report", metavar="DATEI", help=argparse.SUPPRESS)
     up.set_defaults(fn=cmd_update)
 
     rl = sub.add_parser("release", help="belegtes Gerät vom Client lösen (auf dem Server-Rechner)")
@@ -309,18 +403,6 @@ def main(argv=None) -> int:
     rl.add_argument("--server", default="127.0.0.1", help="Standard: dieser Rechner")
     rl.add_argument("--port", type=int, default=P.DEFAULT_PORT)
     rl.set_defaults(fn=cmd_release)
-
-    t = sub.add_parser("attach", help="in der VM: Geräte vom Server einbinden (nutzt usbip)")
-    t.add_argument("servers", nargs="+", metavar="SERVER[:PORT]",
-                   help="ein oder mehrere Server, z. B. 192.168.1.20 192.168.1.21:3241")
-    t.add_argument("--port", type=int, default=P.DEFAULT_PORT,
-                   help="Standard-Port für Server ohne :PORT")
-    t.add_argument("--device", action="append", metavar="VID:PID|BUSID",
-                   help="nur diese Geräte (Standard: alle)")
-    t.add_argument("--watch", action="store_true",
-                   help="dauerhaft laufen und Geräte automatisch (wieder) einbinden")
-    t.add_argument("--interval", type=float, default=3.0)
-    t.set_defaults(fn=cmd_attach)
 
     a = p.parse_args(argv)
     level = logging.WARNING - 10 * a.verbose if a.cmd != "serve" else logging.INFO - 10 * min(a.verbose, 1)

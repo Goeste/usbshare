@@ -9,13 +9,20 @@ mit Fenster, Serverliste und automatischem Verbinden.
 
 ## Einrichten (einmalig)
 
-1. **usbip-win2 installieren** – das ist der Windows-Treiber, über den die Geräte
-   eingebunden werden: https://github.com/vadimgrn/usbip-win2/releases
-   (Installer `USBip-x.x.x-x64.exe` herunterladen und ausführen).
-2. `usbshare-client.exe` an einen festen Ort kopieren, z. B. `C:\Program Files\usbshare\`.
-3. Starten. Windows fragt nach Administratorrechten – die braucht usbip-win2 zum
-   Einbinden von Geräten. Beim ersten Start warnt Windows, weil die Datei **nicht
-   signiert** ist – siehe „Windows-Warnung“ unten.
+1. Den Ordner `usbshare-client` an einen festen Ort kopieren, z. B.
+   `C:\Program Files\usbshare\` (den Unterordner `usbip-win2` mitkopieren).
+2. `usbshare-client.exe` starten. Windows fragt nach Administratorrechten – die braucht
+   usbip-win2 zum Einbinden von Geräten. Beim ersten Start warnt Windows, weil die Datei
+   **nicht signiert** ist – siehe „Windows-Warnung“ unten.
+3. **usbip-win2 installieren** – das ist der Windows-Treiber, über den die Geräte
+   eingebunden werden. Fehlt er, zeigt das Fenster oben einen gelben Hinweis mit
+   **„Installieren“**. Der Client installiert dann das mitgelieferte Setup aus dem Ordner
+   `usbip-win2` ohne Rückfragen; gibt es auf GitHub eine neuere Version, wird diese geladen
+   (und per SHA-256-Prüfsumme von GitHub geprüft). Während der Installation werden die
+   USB-Geräte des Rechners kurz getrennt. **Danach muss Windows neu gestartet werden** –
+   der Client bietet „Jetzt neu starten“ an.
+   Später aktualisieren: Menü **⋯** → **„usbip-win2 installieren / aktualisieren …“**.
+   Von Hand geht es auch: https://github.com/vadimgrn/usbip-win2/releases
 
 ## Windows-Warnung: Die Programme sind nicht signiert
 
@@ -117,4 +124,4 @@ Die Einstellungen liegen in `%APPDATA%\usbshare\client.json`.
 * Server mit abweichendem Port (nicht 3240) erfordern, dass usbip-win2 die Option
   `--tcp-port` unterstützt – im Zweifel den Standardport verwenden.
 * Für Skripte gibt es weiterhin die Kommandozeilenversion im Server-Paket
-  (`usbshare.exe remote …` / `usbshare.exe attach …`).
+  (`usbshare.exe list`, `usbshare.exe remote …`).

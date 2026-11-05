@@ -444,13 +444,19 @@ class ServerWindow:
         UpdateDialog(self.root, "server", "usbshare Server", on_installed=self._restart_after_update)
 
     def _restart_after_update(self):
-        """Linux: the service was updated and restarted; reopen this window with the new binary."""
-        from .updater import frozen_executable
+        """The service was updated and restarted; reopen this window with the new program."""
+        from .updater import clean_environment, frozen_executable
         exe = frozen_executable()
         self.tray.stop()
-        if exe and not IS_WIN:
+        if exe and IS_WIN:
+            if getattr(self, "inst", None):
+                self.inst.close()
+            subprocess.Popen([exe, "--port", str(self.port), "--after-update"], close_fds=True,
+                             creationflags=0x00000008 | 0x00000200, env=clean_environment())
             self.root.destroy()
-            from .update_ui import clean_environment
+            return
+        if exe:
+            self.root.destroy()
             os.execve(exe, [exe, "gui", "--port", str(self.port)], clean_environment())
         messagebox.showinfo("usbshare Server", "Update installiert.")
 
@@ -491,6 +497,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="usbshare-server-gui")
     p.add_argument("--port", type=int, default=P.DEFAULT_PORT)
     p.add_argument("--minimized", action="store_true")
+    p.add_argument("--after-update", action="store_true", help=argparse.SUPPRESS)
     a = p.parse_args(sys.argv[1:] if argv is None else argv)
     if IS_WIN:
         try:
@@ -498,12 +505,16 @@ def main(argv=None) -> int:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except Exception:
             pass
-    inst = SingleInstance(INSTANCE_PORT)
+    inst = SingleInstance(INSTANCE_PORT, wait=15.0 if a.after_update else 0.0)
     if not inst.first:
         inst.notify_running()
         return 0
+    if a.after_update:
+        from .updater import cleanup_old_exe
+        cleanup_old_exe()
     root = tk.Tk()
     win = ServerWindow(root, a.port)
+    win.inst = inst
     inst.listen(lambda: win.ui.call(win.show))
     if a.minimized and win.tray.available:
         root.withdraw()

@@ -55,7 +55,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python-Pakete
-        run: pip install pyinstaller libusb1 sv-ttk pillow pystray
+        run: pip install pyinstaller libusb1 sv-ttk pillow
       - name: Bauen
         run: |
           python build.py
@@ -122,10 +122,24 @@ jobs:
             fi
           fi
           echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+      - name: usbip-win2 holen (Treiber für den Client, BSD-2-Clause)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p usbip
+          REL=$(gh api repos/vadimgrn/usbip-win2/releases/latest)
+          NAME=$(echo "$REL" | jq -r '[.assets[] | select(.name | test("^USBip-[0-9.]+-x64(-Release)?\\.exe$"))][0].name')
+          DIGEST=$(echo "$REL" | jq -r --arg n "$NAME" '.assets[] | select(.name == $n) | .digest')
+          TAG=$(echo "$REL" | jq -r .tag_name)
+          echo "usbip-win2 $TAG: $NAME ($DIGEST)"
+          gh release download "$TAG" --repo vadimgrn/usbip-win2 --pattern "$NAME" --dir usbip
+          echo "${DIGEST#sha256:}  usbip/$NAME" | sha256sum -c -
+          curl -fsSL -o usbip/LICENSE.txt "https://raw.githubusercontent.com/vadimgrn/usbip-win2/$TAG/LICENSE.txt"
+          ls -la usbip
       - name: Pakete schnüren
         run: |
           ls -la bins
-          python packaging/make_packages.py --version ${{ steps.ver.outputs.version }} --bins bins --out out
+          python packaging/make_packages.py --version ${{ steps.ver.outputs.version }} --bins bins --out out --usbip usbip
           (cd out && sha256sum *.zip > SHA256SUMS.txt && cat SHA256SUMS.txt)
           ls -la out
       - name: Release-Text aus CHANGELOG.md
@@ -136,8 +150,9 @@ jobs:
           text = open("CHANGELOG.md", encoding="utf-8").read()
           m = re.search(r"^## \[" + re.escape(v) + r"\].*?\n(.*?)(?=^## \[|\Z)", text, re.S | re.M)
           body = (m.group(1).strip() if m else "Siehe CHANGELOG.md") + (
-              "\n\n**Downloads:** `usbshare-server-…zip` für den Rechner mit den USB-Geräten "
-              "(Linux + Windows), `usbshare-client-…-windows.zip` für die Windows-VM.\n\n"
+              "\n\n**Downloads:** für den Rechner mit den USB-Geräten `usbshare-server-…-linux.zip` "
+              "(Linux) oder `usbshare-windows-server-…zip` (Windows); für die Windows-VM "
+              "`usbshare-client-…-windows.zip` (mit dem Treiber usbip-win2).\n\n"
               "**Hinweis:** Die Windows-Programme sind **nicht signiert**. Windows SmartScreen "
               "warnt deshalb beim ersten Start – „Weitere Informationen“ → „Trotzdem ausführen“, "
               "oder die ZIP vor dem Entpacken unter Eigenschaften → „Zulassen“ freigeben. "

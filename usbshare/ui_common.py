@@ -5,6 +5,7 @@ light/dark mode, app icons, tray icon and single-instance handling."""
 from __future__ import annotations
 
 import logging
+import os
 import queue
 import socket
 import sys
@@ -139,14 +140,28 @@ def dark_title_bar(win: tk.Misc, dark: bool) -> None:
 _ICON_REFS: List = []
 
 
+ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+
+
+def asset(name: str) -> str:
+    return os.path.join(ASSETS, name)
+
+
+def _photo(win: tk.Misc, kind: str, size: int) -> Optional[tk.PhotoImage]:
+    path = asset(f"{kind}-{size}.png")
+    if not os.path.exists(path):
+        return None
+    img = tk.PhotoImage(master=win, file=path)        # Tk 8.6 reads PNG itself
+    _ICON_REFS.append(img)
+    return img
+
+
 def set_window_icon(win: tk.Misc, kind: str) -> None:
     try:
-        from PIL import ImageTk
-        from .icons import make_icon
-        imgs = [ImageTk.PhotoImage(make_icon(kind, s)) for s in (16, 32, 48, 256)]
-        _ICON_REFS.extend(imgs)
-        win.iconphoto(True, *imgs)
-    except Exception as e:  # pragma: no cover
+        imgs = [i for i in (_photo(win, kind, s) for s in (16, 32, 48, 256)) if i]
+        if imgs:
+            win.iconphoto(True, *imgs)
+    except tk.TclError as e:  # pragma: no cover
         log.debug("no window icon: %s", e)
 
 
@@ -154,14 +169,9 @@ def header(parent, kind: str, title: str) -> Tuple[ttk.Frame, ttk.Label, ttk.Fra
     """Title bar inside the window: icon, title, subtitle; returns (frame, subtitle, right side)."""
     frm = ttk.Frame(parent, padding=(18, 14, 18, 6))
     frm.pack(fill="x")
-    try:
-        from PIL import ImageTk
-        from .icons import make_icon
-        img = ImageTk.PhotoImage(make_icon(kind, 40))
-        _ICON_REFS.append(img)
+    img = _photo(frm, kind, 40)
+    if img:
         ttk.Label(frm, image=img).pack(side="left", padx=(0, 12))
-    except Exception:
-        pass
     txt = ttk.Frame(frm)
     txt.pack(side="left")
     ttk.Label(txt, text=title, style="Title.TLabel").pack(anchor="w")
@@ -174,7 +184,7 @@ def header(parent, kind: str, title: str) -> Tuple[ttk.Frame, ttk.Label, ttk.Fra
 
 # -- thread -> Tk calls -------------------------------------------------------------
 class UiQueue:
-    """Run callables on the Tk thread (pystray and sockets call from other threads)."""
+    """Run callables on the Tk thread (tray and sockets call from other threads)."""
 
     def __init__(self, root: tk.Tk):
         self.root, self.q = root, queue.Queue()
@@ -253,66 +263,210 @@ class SingleInstance:
 
 # -- tray icon --------------------------------------------------------------------------
 class Tray:
-    """Icon in the Windows notification area (next to the clock)."""
+    """Icon in the Windows notification area (next to the clock).
+
+    Talks to the Windows shell directly (Shell_NotifyIconW) from its own thread with a hidden
+    message window – no extra libraries. On other systems it is simply not available."""
+
+    WM_TRAY = 0x8000 + 1          # WM_APP + 1
+    NIM_ADD, NIM_MODIFY, NIM_DELETE, NIM_SETVERSION = 0, 1, 2, 4
+    NIF_MESSAGE, NIF_ICON, NIF_TIP, NIF_INFO = 0x1, 0x2, 0x4, 0x10
 
     def __init__(self, kind: str, title: str, ui: UiQueue,
                  items: List[Tuple[str, Optional[Callable[[], None]], bool]]):
         """items: (label, callback or None for separator, is_default)."""
-        self.kind, self.ui = kind, ui
-        self.icon = None
-        self._badge = None
+        self.kind, self.ui, self.items = kind, ui, items
+        self.title = title
+        self._badge = ""
+        self._hwnd = None
+        self._icons: Dict[str, int] = {}
+        self._ready = threading.Event()
+        self._ok = False
         if not IS_WIN:
             return
-        try:
-            import pystray
-            from .icons import make_icon
-            menu = []
-            for label, cb, default in items:
-                if cb is None:
-                    menu.append(pystray.Menu.SEPARATOR)
-                else:
-                    menu.append(pystray.MenuItem(label, (lambda c: lambda *_: ui.call(c))(cb),
-                                                 default=default))
-            self._images: Dict[str, object] = {}
-            self.icon = pystray.Icon(f"usbshare-{kind}", make_icon(kind, 64), title,
-                                     menu=pystray.Menu(*menu))
-            self.icon.run_detached()
-        except Exception as e:
-            log.warning("tray icon not available: %s", e)
-            self.icon = None
+        threading.Thread(target=self._run, name="tray", daemon=True).start()
+        self._ready.wait(5)
 
     @property
     def available(self) -> bool:
-        return self.icon is not None
+        return self._ok
 
-    def update(self, badge: str, tooltip: str) -> None:
-        if not self.icon:
-            return
+    # -- Win32 plumbing -------------------------------------------------------------------
+    def _api(self):
+        import ctypes
+        from ctypes import wintypes as W
+        u, sh, k = ctypes.windll.user32, ctypes.windll.shell32, ctypes.windll.kernel32
+        LRESULT = ctypes.c_ssize_t
+        self.WNDPROC = ctypes.WINFUNCTYPE(LRESULT, W.HWND, W.UINT, W.WPARAM, W.LPARAM)
+        u.DefWindowProcW.argtypes = [W.HWND, W.UINT, W.WPARAM, W.LPARAM]
+        u.DefWindowProcW.restype = LRESULT
+        u.CreateWindowExW.restype = W.HWND
+        u.CreateWindowExW.argtypes = [W.DWORD, W.LPCWSTR, W.LPCWSTR, W.DWORD, ctypes.c_int,
+                                      ctypes.c_int, ctypes.c_int, ctypes.c_int, W.HWND, W.HMENU,
+                                      W.HINSTANCE, W.LPVOID]
+        u.LoadImageW.restype = W.HANDLE
+        u.LoadImageW.argtypes = [W.HINSTANCE, W.LPCWSTR, W.UINT, ctypes.c_int, ctypes.c_int,
+                                 W.UINT]
+        u.CreatePopupMenu.restype = W.HMENU
+        u.AppendMenuW.argtypes = [W.HMENU, W.UINT, ctypes.c_size_t, W.LPCWSTR]
+        u.TrackPopupMenu.argtypes = [W.HMENU, W.UINT, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                                     W.HWND, W.LPVOID]
+        u.SetMenuDefaultItem.argtypes = [W.HMENU, W.UINT, W.UINT]
+        u.PostMessageW.argtypes = [W.HWND, W.UINT, W.WPARAM, W.LPARAM]
+        u.SetForegroundWindow.argtypes = [W.HWND]
+        u.DestroyMenu.argtypes = [W.HMENU]
+        u.RegisterWindowMessageW.argtypes = [W.LPCWSTR]
+        k.GetModuleHandleW.restype = W.HMODULE
+
+        class WNDCLASSW(ctypes.Structure):
+            _fields_ = [("style", W.UINT), ("lpfnWndProc", self.WNDPROC), ("cbClsExtra", ctypes.c_int),
+                        ("cbWndExtra", ctypes.c_int), ("hInstance", W.HINSTANCE), ("hIcon", W.HICON),
+                        ("hCursor", W.HANDLE), ("hbrBackground", W.HBRUSH),
+                        ("lpszMenuName", W.LPCWSTR), ("lpszClassName", W.LPCWSTR)]
+
+        class GUID(ctypes.Structure):
+            _fields_ = [("a", W.DWORD), ("b", W.WORD), ("c", W.WORD), ("d", ctypes.c_ubyte * 8)]
+
+        class NOTIFYICONDATAW(ctypes.Structure):
+            _fields_ = [("cbSize", W.DWORD), ("hWnd", W.HWND), ("uID", W.UINT), ("uFlags", W.UINT),
+                        ("uCallbackMessage", W.UINT), ("hIcon", W.HICON), ("szTip", W.WCHAR * 128),
+                        ("dwState", W.DWORD), ("dwStateMask", W.DWORD), ("szInfo", W.WCHAR * 256),
+                        ("uVersion", W.UINT), ("szInfoTitle", W.WCHAR * 64),
+                        ("dwInfoFlags", W.DWORD), ("guidItem", GUID), ("hBalloonIcon", W.HICON)]
+
+        class MSG(ctypes.Structure):
+            _fields_ = [("hwnd", W.HWND), ("message", W.UINT), ("wParam", W.WPARAM),
+                        ("lParam", W.LPARAM), ("time", W.DWORD), ("pt", W.POINT)]
+        return ctypes, W, u, sh, k, WNDCLASSW, NOTIFYICONDATAW, MSG
+
+    def _icon(self, badge: str) -> int:
+        if badge not in self._icons:
+            name = f"{self.kind}{'-' + badge if badge else ''}.ico"
+            # IMAGE_ICON = 1, LR_LOADFROMFILE = 0x10, 0/0 = system small icon size
+            self._icons[badge] = self._u.LoadImageW(None, asset(name), 1, 0, 0, 0x10 | 0x40) or 0
+        return self._icons[badge]
+
+    def _nid(self, flags: int, tip: str = "", info: str = "", info_title: str = ""):
+        nid = self._NID()
+        nid.cbSize = self._ctypes.sizeof(self._NID)
+        nid.hWnd, nid.uID, nid.uFlags = self._hwnd, 1, flags
+        nid.uCallbackMessage = self.WM_TRAY
+        nid.hIcon = self._icon(self._badge)
+        nid.szTip = (tip or self.title)[:127]
+        if flags & self.NIF_INFO:
+            nid.szInfo, nid.szInfoTitle, nid.dwInfoFlags = info[:255], info_title[:63], 0x1
+        return nid
+
+    def _shell(self, msg: int, nid) -> bool:
+        return bool(self._sh.Shell_NotifyIconW(msg, self._ctypes.byref(nid)))
+
+    def _run(self) -> None:
         try:
-            if badge != self._badge:
-                from .icons import make_icon
-                self.icon.icon = make_icon(self.kind, 64, badge)
-                self._badge = badge
-            tooltip = tooltip[:120]
-            if self.icon.title != tooltip:
-                self.icon.title = tooltip
+            (ctypes, W, u, sh, k, WNDCLASSW, NID, MSG) = self._api()
+            self._ctypes, self._u, self._sh, self._NID = ctypes, u, sh, NID
+            taskbar_created = u.RegisterWindowMessageW("TaskbarCreated")
+
+            def wndproc(hwnd, msg, wp, lp):
+                if msg == self.WM_TRAY:
+                    event = lp & 0xFFFF
+                    if event == 0x0203:                       # WM_LBUTTONDBLCLK
+                        self._activate_default()
+                    elif event in (0x0205, 0x007B):           # WM_RBUTTONUP, WM_CONTEXTMENU
+                        self._menu(hwnd)
+                    return 0
+                if msg == taskbar_created:                    # Explorer restarted
+                    self._shell(self.NIM_ADD, self._nid(self.NIF_MESSAGE | self.NIF_ICON | self.NIF_TIP,
+                                                        self._tip))
+                    return 0
+                if msg == 0x0010:                             # WM_CLOSE
+                    u.DestroyWindow(hwnd)
+                    return 0
+                if msg == 0x0002:                             # WM_DESTROY
+                    u.PostQuitMessage(0)
+                    return 0
+                return u.DefWindowProcW(hwnd, msg, wp, lp)
+
+            self._proc = self.WNDPROC(wndproc)               # keep a reference
+            hinst = k.GetModuleHandleW(None)
+            wc = WNDCLASSW()
+            wc.lpfnWndProc, wc.hInstance = self._proc, hinst
+            wc.lpszClassName = f"usbshare-tray-{self.kind}"
+            u.RegisterClassW(ctypes.byref(wc))
+            self._hwnd = u.CreateWindowExW(0, wc.lpszClassName, self.title, 0, 0, 0, 0, 0,
+                                           None, None, hinst, None)
+            self._tip = self.title
+            self._ok = bool(self._hwnd) and self._shell(
+                self.NIM_ADD, self._nid(self.NIF_MESSAGE | self.NIF_ICON | self.NIF_TIP))
+        except Exception as e:
+            log.warning("tray icon not available: %s", e)
+            self._ok = False
+        finally:
+            self._ready.set()
+        if not self._ok:
+            return
+        msg = MSG()
+        while u.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
+            u.TranslateMessage(ctypes.byref(msg))
+            u.DispatchMessageW(ctypes.byref(msg))
+
+    def _activate_default(self) -> None:
+        for _label, cb, default in self.items:
+            if cb is not None and default:
+                self.ui.call(cb)
+                return
+
+    def _menu(self, hwnd) -> None:
+        u = self._u
+        menu = u.CreatePopupMenu()
+        ids = {}
+        for i, (label, cb, default) in enumerate(self.items, start=1):
+            if cb is None:
+                u.AppendMenuW(menu, 0x800, 0, None)                 # MF_SEPARATOR
+            else:
+                u.AppendMenuW(menu, 0, i, label)
+                ids[i] = cb
+                if default:
+                    u.SetMenuDefaultItem(menu, i, 0)
+        pt = self._ctypes.wintypes.POINT()
+        u.GetCursorPos(self._ctypes.byref(pt))
+        u.SetForegroundWindow(hwnd)
+        # TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON
+        choice = u.TrackPopupMenu(menu, 0x0100 | 0x0080 | 0x0002, pt.x, pt.y, 0, hwnd, None)
+        u.PostMessageW(hwnd, 0, 0, 0)
+        u.DestroyMenu(menu)
+        if choice in ids:
+            self.ui.call(ids[choice])
+
+    # -- public -------------------------------------------------------------------------------
+    def update(self, badge: str, tooltip: str) -> None:
+        if not self._ok:
+            return
+        tooltip = tooltip[:120]
+        if badge == self._badge and tooltip == self._tip:
+            return
+        self._badge, self._tip = badge, tooltip
+        try:
+            self._shell(self.NIM_MODIFY, self._nid(self.NIF_ICON | self.NIF_TIP, tooltip))
         except Exception:
             pass
 
     def notify(self, title: str, text: str) -> None:
-        if not self.icon:
+        if not self._ok:
             return
         try:
-            self.icon.notify(text, title)
+            self._shell(self.NIM_MODIFY, self._nid(self.NIF_INFO, self._tip, text, title))
         except Exception:
             pass
 
     def stop(self) -> None:
-        if self.icon:
-            try:
-                self.icon.stop()
-            except Exception:
-                pass
+        if not self._ok:
+            return
+        self._ok = False
+        try:
+            self._shell(self.NIM_DELETE, self._nid(0))
+            self._u.PostMessageW(self._hwnd, 0x0010, 0, 0)      # WM_CLOSE -> ends the thread
+        except Exception:
+            pass
 
 
 def show_window(root: tk.Tk) -> None:

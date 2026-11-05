@@ -26,7 +26,13 @@ die die Geräte nutzen soll.
 - Spricht das offene **USB/IP-Protokoll**: Als Client dient unter Windows
   [usbip-win2](https://github.com/vadimgrn/usbip-win2), unter Linux der Kernel-Treiber
   `vhci-hcd` – es ist kein eigener Kernel-Treiber nötig
-- Control-, Bulk-, Interrupt- und isochrone Transfers; USB-Reset bei der Übergabe
+- **usbip-win2 ist im Client-Paket enthalten** und wird vom Client per Klick installiert
+  (ohne Rückfragen); gibt es auf GitHub eine neuere Version, lädt der Client diese
+- Control-, Bulk-, Interrupt- und isochrone Transfers (mit Audio-Puffer für Headsets);
+  USB-Reset bei der Übergabe
+- **Updates per Klick** für Client, Linux- und Windows-Server
+- Schlank: einzelne Programmdateien ohne Installation von Python (Windows-Server 8,5 MB,
+  Client 11 MB, Linux-Server 13,5 MB)
 
 | Server-Fenster | Client (dunkel) |
 |---|---|
@@ -38,8 +44,9 @@ Fertige Pakete gibt es unter **[Releases](../../releases)**:
 
 | Paket | Für |
 |---|---|
-| `usbshare-server-<version>.zip` | den Rechner mit den USB-Geräten – Ordner `linux/` und `windows/` |
-| `usbshare-client-<version>-windows.zip` | die Windows-VM bzw. den Windows-PC, der die Geräte nutzt |
+| `usbshare-server-<version>-linux.zip` | Server unter **Linux** (Rechner mit den USB-Geräten) |
+| `usbshare-windows-server-<version>.zip` | Server unter **Windows** (Rechner mit den USB-Geräten) |
+| `usbshare-client-<version>-windows.zip` | die Windows-VM bzw. den Windows-PC, der die Geräte nutzt – mit usbip-win2 |
 
 Die Anleitungen liegen als `LIESMICH.md` in den Paketen
 ([Server](packaging/server/LIESMICH.md), [Client](packaging/client/LIESMICH.md)).
@@ -80,6 +87,7 @@ Eine Signierung (über die SignPath Foundation für Open-Source-Projekte) ist ge
 **Server unter Linux**
 
 ```bash
+unzip usbshare-server-<version>-linux.zip
 cd usbshare-server/linux
 sudo ./install.sh
 ```
@@ -88,14 +96,17 @@ sudo ./install.sh
 installieren, dann PowerShell als Administrator:
 
 ```powershell
-cd usbshare-server\windows
+cd usbshare-windows-server
 Set-ExecutionPolicy -Scope Process Bypass
 .\install-service.ps1 -UsbDk
 ```
 
-**Client (Windows-VM)** – [usbip-win2](https://github.com/vadimgrn/usbip-win2/releases)
-installieren, `usbshare-client.exe` starten (Windows-Warnung siehe oben), „Server suchen“.
-Die VM muss im selben Netzwerk wie der Server sein (Netzwerkkarte gebrückt, nicht NAT).
+**Client (Windows-VM)** – Paket entpacken, `usbshare-client.exe` starten (Windows-Warnung
+siehe oben). Ist usbip-win2 noch nicht installiert, zeigt das Fenster einen Hinweis mit
+**„Installieren“**: Der Client installiert den mitgelieferten Treiber ohne Rückfragen (oder
+eine neuere Version von GitHub, geprüft per SHA-256) und bietet danach den nötigen
+Neustart an. Danach „Server suchen“. Die VM muss im selben Netzwerk wie der Server sein
+(Netzwerkkarte gebrückt, nicht NAT).
 
 ## Updates
 
@@ -107,8 +118,12 @@ Die VM muss im selben Netzwerk wie der Server sein (Netzwerkkarte gebrückt, nic
   neue Version vor dem Austausch und startet den Dienst neu. Die Konfiguration bleibt
   erhalten. Im Server-Fenster geht das über den Knopf **„Nach Updates suchen“** (Linux fragt
   nach dem Passwort).
-- **Windows-Server:** Das Fenster zeigt neue Versionen an; installiert wird wie bisher über
-  das Paket (`install-service.ps1` erneut ausführen).
+- **Windows-Server:** im Server-Fenster **„Nach Updates suchen“** → „Jetzt aktualisieren“
+  (Windows fragt nach Administratorrechten), oder in einer Eingabeaufforderung als
+  Administrator `usbshare update`. Ersetzt `usbshare.exe` und `usbshare-server-gui.exe`,
+  testet die neue Version vorher und startet den Dienst neu.
+- **usbip-win2 (Client):** Menü **⋯** → **„usbip-win2 installieren / aktualisieren …“**
+  zeigt die installierte und die verfügbare Version.
 
 Updates werden nur auf Knopfdruck gesucht (Abfrage bei GitHub, keine automatische
 Verbindung). Jedes Release enthält `SHA256SUMS.txt`; ein Update wird nur installiert, wenn
@@ -117,7 +132,7 @@ die Prüfsumme stimmt.
 ## Aus dem Quellcode starten und bauen
 
 ```bash
-pip install libusb1 sv-ttk pillow          # Windows zusätzlich: pystray
+pip install libusb1 sv-ttk                 # Pillow nur zum Bauen (Symbole)
 python -m usbshare list                    # lokale USB-Geräte
 sudo python -m usbshare serve --config usbshare.toml
 python -m usbshare gui                     # Server-Fenster
@@ -128,16 +143,17 @@ python -m unittest discover -s tests -t .  # Tests
 Einzelne Programme mit PyInstaller (jeweils auf dem Zielsystem):
 
 ```bash
-pip install pyinstaller libusb1 sv-ttk pillow pystray
+pip install pyinstaller libusb1 sv-ttk pillow
 python build.py              # usbshare(.exe): Server + Kommandozeile (+ Server-Fenster unter Linux)
 python build.py gui          # usbshare-client.exe
 python build.py server-gui   # usbshare-server-gui.exe
-python packaging/make_packages.py --version 0.4.3 --bins dist --out out
+python packaging/make_packages.py --version 0.7.0 --bins dist --out out --usbip <ordner>
 ```
 
 **Releases per GitHub Actions:** Version in `usbshare/__init__.py` erhöhen, den Abschnitt in
 [CHANGELOG.md](CHANGELOG.md) ergänzen und auf `main` pushen – der Workflow „Build & Release“
-baut dann Linux, Windows und experimentell macOS, schnürt die Pakete und veröffentlicht das
+baut dann Linux, Windows und experimentell macOS, holt das aktuelle usbip-win2-Setup
+(Prüfsumme von GitHub), schnürt die Pakete und veröffentlicht das
 Release `v<version>` mit dem Changelog-Abschnitt. Alternativ einen Tag `v<version>` pushen.
 Über „Run workflow“ lässt sich der Build auch ohne Release starten.
 
@@ -149,8 +165,10 @@ Release `v<version>` mit dem Changelog-Abschnitt. Alternativ einen Tag `v<versio
 | `usbshare/server.py`, `libusb_backend.py` | Server, USB-Zugriff über libusb |
 | `usbshare/config.py` | Server-Konfiguration (`usbshare.toml`) |
 | `usbshare/gui.py`, `gui_model.py` | Windows-Client-Fenster |
+| `usbshare/driver.py` | usbip-win2 finden, installieren, aktualisieren |
 | `usbshare/server_gui.py` | Server-Fenster |
-| `usbshare/ui_common.py`, `icons.py` | Design, Infobereich, Symbole |
+| `usbshare/updater.py`, `update_ui.py` | Updates (GitHub-Releases, Prüfsummen) |
+| `usbshare/ui_common.py`, `icons.py`, `assets/` | Design, Infobereich, Symbole |
 | `packaging/` | Installationsskripte und Anleitungen der Pakete |
 | `contrib/` | Linux-Client-Skript (Auto-Attach), macOS-launchd |
 | `tests/` | Tests (Protokoll, Server, Client-Logik, libusb-Puffer) |
@@ -177,4 +195,9 @@ Abschnitt 7 b) ([NOTICE](NOTICE)):
   „Über“-Dialog.
 
 Die genutzten Bibliotheken stehen unter eigenen, GPL-kompatiblen Lizenzen
-(libusb/python-libusb1: LGPL-2.1, sv-ttk: MIT, Pillow: MIT-CMU, pystray: LGPL-3.0).
+(libusb/python-libusb1: LGPL-2.1, sv-ttk: MIT; Pillow: MIT-CMU, nur beim Bauen).
+
+Das Client-Paket enthält außerdem das unveränderte Installationsprogramm von
+[usbip-win2](https://github.com/vadimgrn/usbip-win2) (© Vadym Hrynchyshyn, BSD 2-Clause,
+Lizenz liegt im Ordner `usbip-win2` bei) – ein eigenständiges Programm, das usbshare nur
+aufruft.

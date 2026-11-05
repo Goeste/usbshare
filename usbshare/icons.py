@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Goeste – usbshare (siehe LICENSE und NOTICE)
-"""App icons drawn with Pillow (no image files needed): window, tray and .exe icons."""
+"""App icons drawn with Pillow. Only used to (re)generate usbshare/assets/ –
+the programs themselves load the pre-rendered files and need no image library."""
 from __future__ import annotations
 
 from PIL import Image, ImageDraw
@@ -64,6 +65,21 @@ def save_ico(kind: str, path: str) -> None:
                                            (128, 128), (256, 256)])
 
 
-if __name__ == "__main__":   # used by build.py
-    import sys
-    save_ico(sys.argv[1], sys.argv[2])
+
+
+def write_assets(folder: str) -> None:
+    """Pre-render all icons as files, so the programs need no image library at runtime."""
+    import os
+    os.makedirs(folder, exist_ok=True)
+    for kind in ("client", "server"):
+        for size in (16, 32, 40, 48, 256):
+            make_icon(kind, size).save(os.path.join(folder, f"{kind}-{size}.png"), optimize=True)
+        for badge in ("", "ok", "warn"):
+            name = f"{kind}{'-' + badge if badge else ''}.ico"
+            make_icon(kind, 256, badge).save(os.path.join(folder, name),
+                                             sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (256, 256)])
+
+
+if __name__ == "__main__":   # python -m usbshare.icons  ->  regenerate usbshare/assets
+    import os
+    write_assets(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets"))

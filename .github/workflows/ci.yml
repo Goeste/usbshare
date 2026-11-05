@@ -32,8 +32,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install libusb1 sv-ttk pillow pystray
+      - run: pip install libusb1 sv-ttk
       - name: Module laden
         run: |
-          python -c "import usbshare.gui, usbshare.server_gui, usbshare.libusb_backend; print('ok')"
+          python -c "import usbshare.gui, usbshare.server_gui, usbshare.update_ui, usbshare.driver, usbshare.libusb_backend; print('ok')"
           python -m usbshare --version

@@ -32,3 +32,13 @@ English: Anyone conveying this program or a work based on it must preserve the a
 attribution "Based on usbshare by Goeste (https://github.com/Goeste/usbshare)" in the README or main
 documentation and, if the work has a graphical "About" display, in that display.
 Copyright notices in the source files and this NOTICE file must not be removed.
+
+-------------------------------------------------------------------------------
+Mitgelieferte Programme Dritter (Third-party software)
+-------------------------------------------------------------------------------
+
+Das Client-Paket (usbshare-client-<version>-windows.zip) enthält im Ordner usbip-win2 das
+unveränderte Installationsprogramm von usbip-win2 (https://github.com/vadimgrn/usbip-win2),
+Copyright (c) Vadym Hrynchyshyn, lizenziert unter der BSD 2-Clause License (siehe
+usbip-win2/LICENSE.txt im Paket). Es ist ein eigenständiges Programm und nicht Teil von
+usbshare; usbshare startet es nur.

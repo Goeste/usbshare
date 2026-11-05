@@ -148,7 +148,7 @@ class WindowsExeSwap(unittest.TestCase):
         self.assertEqual(env.get("PYINSTALLER_RESET_ENVIRONMENT"), "1")
         self.assertFalse([k for k in env if k.startswith("_PYI") or k == "TCL_LIBRARY"])
         with mock.patch.object(U, "frozen_executable", return_value=exe):
-            update_ui.cleanup_old_exe()
+            U.cleanup_old_exe()
         self.assertFalse(os.path.exists(exe + ".old"))
 
 

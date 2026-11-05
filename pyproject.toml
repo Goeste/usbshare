@@ -20,8 +20,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-gui = ["sv-ttk>=2.6", "pillow>=10", "pystray>=0.19; sys_platform == 'win32'"]
-build = ["pyinstaller>=6", "sv-ttk>=2.6", "pillow>=10", "pystray>=0.19; sys_platform == 'win32'"]
+gui = ["sv-ttk>=2.6"]
+build = ["pyinstaller>=6", "sv-ttk>=2.6", "pillow>=10"]
 
 [project.urls]
 Homepage = "https://github.com/Goeste/usbshare"
@@ -32,3 +32,6 @@ usbshare = "usbshare.cli:main"
 
 [tool.setuptools]
 packages = ["usbshare"]
+
+[tool.setuptools.package-data]
+usbshare = ["assets/*"]

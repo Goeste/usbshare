@@ -46,13 +46,21 @@ class Release:
     assets: Dict[str, dict] = field(default_factory=dict)   # name -> {url, size, digest}
 
     def asset(self, kind: str) -> Optional[str]:
-        """kind: 'server' or 'client' -> asset name."""
+        """kind: 'client', 'server' (this platform), 'server-linux' or 'server-windows'."""
+        if kind == "server":
+            kind = "server-windows" if IS_WIN else "server-linux"
+        prefix = PACKAGES[kind]
         for name in self.assets:
-            if kind == "client" and name.startswith("usbshare-client-") and name.endswith(".zip"):
-                return name
-            if kind == "server" and name.startswith("usbshare-server-") and name.endswith(".zip"):
+            if name.startswith(prefix) and name.endswith(".zip"):
                 return name
         return None
+
+
+IS_WIN = sys.platform.startswith("win")
+# Package name prefixes. 'usbshare-server-' is the Linux package (old versions shipped
+# Linux + Windows together under that name – their updaters still find it).
+PACKAGES = {"client": "usbshare-client-", "server-linux": "usbshare-server-",
+            "server-windows": "usbshare-windows-server-"}
 
 
 def _ssl_context() -> ssl.SSLContext:
@@ -124,6 +132,14 @@ def _expected_sha256(rel: Release, name: str) -> Optional[str]:
     return None
 
 
+def verified_download(url: str, sha256: str, timeout: float = 120,
+                      progress: Optional[Callable[[int, int], None]] = None) -> bytes:
+    data = _get(url, timeout=timeout, progress=progress)
+    if hashlib.sha256(data).hexdigest() != sha256.lower():
+        raise UpdateError("Prüfsumme stimmt nicht – Download beschädigt, Update abgebrochen")
+    return data
+
+
 def download_package(rel: Release, kind: str,
                      progress: Optional[Callable[[int, int], None]] = None) -> zipfile.ZipFile:
     """Download and verify the release package; returns the opened zip."""
@@ -133,10 +149,7 @@ def download_package(rel: Release, kind: str,
     expected = _expected_sha256(rel, name)
     if not expected:
         raise UpdateError("Für das Paket gibt es keine Prüfsumme – Update abgebrochen")
-    data = _get(rel.assets[name]["url"], timeout=120, progress=progress)
-    actual = hashlib.sha256(data).hexdigest()
-    if actual != expected:
-        raise UpdateError("Prüfsumme stimmt nicht – Download beschädigt, Update abgebrochen")
+    data = verified_download(rel.assets[name]["url"], expected, progress=progress)
     try:
         return zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile as e:
@@ -164,3 +177,27 @@ def frozen_executable() -> Optional[str]:
     if getattr(sys, "frozen", False):
         return os.path.realpath(sys.executable)
     return None
+
+
+def clean_environment() -> dict:
+    """Environment for starting the *new* program version from the running one.
+
+    A PyInstaller one-file program passes variables to its children so that they reuse its
+    unpacked files (_MEI… temp folder). The new version must not do that: the old one deletes
+    that folder when it exits ("Can't find a usable tk.tcl")."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(("_PYI", "_MEI")) and k not in ("TCL_LIBRARY", "TK_LIBRARY")}
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    return env
+
+
+def cleanup_old_exe(*paths: str) -> None:
+    """Remove the '.old' files a Windows self-update leaves behind (running files can be
+    renamed but not deleted)."""
+    exe = frozen_executable()
+    for p in (paths or ((exe,) if exe else ())):
+        if p and os.path.exists(p + ".old"):
+            try:
+                os.remove(p + ".old")
+            except OSError:
+                pass
