@@ -36,6 +36,16 @@ _STATUS = {
     usb1.TRANSFER_NO_DEVICE: -P.ESHUTDOWN,
     usb1.TRANSFER_OVERFLOW: -P.EOVERFLOW,
 }
+# Per-packet status of isochronous transfers. libusb folds the kernel's -EXDEV ("packet not
+# transferred in its frame", routine for audio) and real errors into TRANSFER_ERROR. Like the
+# Linux usbip host, report such packets as -EXDEV: Windows' audio driver skips those packets,
+# while -EPROTO in nearly every packet makes it stop the stream (microphone goes silent).
+_ISO_PKT_STATUS = dict(_STATUS)
+_ISO_PKT_STATUS[usb1.TRANSFER_ERROR] = -P.EXDEV
+_LIBUSB_NAMES = {usb1.TRANSFER_ERROR: "nicht übertragen", usb1.TRANSFER_OVERFLOW: "zu lang",
+                 usb1.TRANSFER_STALL: "stall", usb1.TRANSFER_TIMED_OUT: "timeout",
+                 usb1.TRANSFER_CANCELLED: "abgebrochen", usb1.TRANSFER_NO_DEVICE: "Gerät weg"}
+CONTROL_LOG_LIMIT = 300
 
 XFER_CONTROL, XFER_ISO, XFER_BULK, XFER_INTERRUPT = 0, 1, 2, 3
 _ERRNAME = {P.EPIPE: "stall", P.EPROTO: "protocol", P.ETIMEDOUT: "timeout",
@@ -220,6 +230,9 @@ class LibusbSession(DeviceSession):
         self._iso_maxgap: Dict[int, float] = {}
         self._iso_last_done: Dict[int, float] = {}
         self._iso_pkt_err: Counter = Counter()
+        self._iso_pkt_kind: Counter = Counter()      # (addr, libusb status) -> packets
+        self._iso_silent: Counter = Counter()        # OUT URBs that carried only zeros
+        self._ctrl_logged = 0
         self._open_and_claim(dev)
         if reset:
             # Put the device into a clean, just-plugged-in state for the client. Some devices
@@ -331,6 +344,8 @@ class LibusbSession(DeviceSession):
         iso = cmd.iso_packets
         if iso:
             self._iso_submitted(addr)
+            if not is_in and cmd.data and cmd.data.count(0) == len(cmd.data):
+                self._iso_silent[addr] += 1
         try:
             t = self.handle.getTransfer(iso_packets=len(iso) if iso else 0)
             if cmd.ep == 0:
@@ -376,7 +391,9 @@ class LibusbSession(DeviceSession):
                 bufs = t.getISOBufferList() if is_in else [b""] * len(setups)
                 packets, chunks, errors = [], [], 0
                 for orig, st, buf in zip(cmd.iso_packets, setups, bufs):
-                    pst = _STATUS.get(st["status"], -P.EPROTO)
+                    pst = _ISO_PKT_STATUS.get(st["status"], -P.EPROTO)
+                    if st["status"] != usb1.TRANSFER_COMPLETED:
+                        self._iso_pkt_kind[(cmd.endpoint_address, st["status"])] += 1
                     errors += pst != 0
                     packets.append(IsoPacket(orig.offset, orig.length, st["actual_length"], pst))
                     if is_in:
@@ -411,6 +428,14 @@ class LibusbSession(DeviceSession):
         if cmd.ep == 0:
             log.debug("%s: control %s -> status %d, %d bytes", self.busid, cmd.setup.hex(),
                       res.status, res.actual_length)
+            rt, req, val, idx, _ln = struct.unpack("<BBHHH", cmd.setup)
+            if rt & 0x60 == 0x20:                     # class requests (audio: rate, volume, mute)
+                what = {0x01: "SET_CUR", 0x81: "GET_CUR", 0x82: "GET_MIN", 0x83: "GET_MAX",
+                        0x84: "GET_RES"}.get(req, f"req 0x{req:02x}")
+                target = {1: "Interface/Unit", 2: "Endpoint"}.get(rt & 0x1F, "Gerät")
+                self._log_ctrl(f"Klassen-Anfrage {what} an {target} wIndex=0x{idx:04x} "
+                               f"wValue=0x{val:04x} → " + ("ok" if res.status == 0 else
+                                                           f"Fehler {res.status}"))
         if res.status == 0 and cmd.direction == P.USBIP_DIR_IN and res.actual_length and cmd.ep:
             if addr not in self._data_seen:
                 self._data_seen.add(addr)
@@ -422,6 +447,11 @@ class LibusbSession(DeviceSession):
             if self._errors[key] == 1:
                 log.warning("%s: endpoint 0x%02x: error %d (%s)", self.busid, addr, res.status,
                             _ERRNAME.get(-res.status, "?"))
+
+    def _log_ctrl(self, text: str) -> None:
+        if self._ctrl_logged < CONTROL_LOG_LIMIT:
+            self._ctrl_logged += 1
+            log.info("%s: %s", self.busid, text)
 
     def _iso_submitted(self, addr: int) -> None:
         now = time.monotonic()
@@ -447,7 +477,11 @@ class LibusbSession(DeviceSession):
         for a in sorted(self._iso_count):
             parts.append(f"0x{a:02x}: {self._iso_count[a]} URBs, leergelaufen {self._iso_dry[a]}×"
                          + (f" (max. {self._iso_maxgap[a]:.0f} ms)" if self._iso_dry[a] else "")
-                         + (f", Paketfehler {self._iso_pkt_err[a]}" if self._iso_pkt_err[a] else ""))
+                         + (f", Paketfehler {self._iso_pkt_err[a]} ("
+                            + ", ".join(f"{_LIBUSB_NAMES.get(k, k)} {n}" for (ea, k), n
+                                        in sorted(self._iso_pkt_kind.items()) if ea == a) + ")"
+                            if self._iso_pkt_err[a] else "")
+                         + (f", nur Stille {self._iso_silent[a]}×" if self._iso_silent[a] else ""))
         return "; ".join(parts)
 
     def summary(self) -> str:
@@ -470,7 +504,10 @@ class LibusbSession(DeviceSession):
                     self.cfg = val
                     self._claim_all()
             elif rt == 0x01 and req == 0x0B:          # SET_INTERFACE
-                self.handle.setInterfaceAltSetting(idx, val)
+                try:
+                    self.handle.setInterfaceAltSetting(idx, val)
+                finally:
+                    self._log_ctrl(f"SET_INTERFACE Interface {idx} → Alternative {val}")
             elif rt == 0x02 and req == 0x01 and val == 0:  # CLEAR_FEATURE(ENDPOINT_HALT)
                 self.handle.clearHalt(idx & 0xFF)
             elif rt == 0x00 and req == 0x05:          # SET_ADDRESS: host already did this

@@ -353,10 +353,12 @@ class RealIsoTransfer(RealTransfer):
         tp = self._USBTransfer__transfer
         buf = self._USBTransfer__transfer_buffer
         offset = 0
-        for desc, (data, actual) in zip(L.get_iso_packet_list(tp), packets):
+        for desc, pkt in zip(L.get_iso_packet_list(tp), packets):
+            data, actual = pkt[0], pkt[1]
+            status = pkt[2] if len(pkt) > 2 else usb1.TRANSFER_COMPLETED
             if data is not None:
                 ctypes.memmove(ctypes.addressof(buf) + offset, data, len(data))
-            desc.actual_length, desc.status = actual, usb1.TRANSFER_COMPLETED
+            desc.actual_length, desc.status = actual, status
             offset += desc.length
         tr = tp.contents
         tr.status = usb1.TRANSFER_COMPLETED
@@ -485,3 +487,39 @@ class IsoStreamHealth(unittest.TestCase):
         self.assertEqual(s._iso_dry[0x01], 1)
         self.assertGreaterEqual(s._iso_maxgap[0x01], 15)
         self.assertIn("leergelaufen 1", s.summary())
+
+
+class IsoPacketErrors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            usb1.loadLibrary()
+        except Exception as e:  # pragma: no cover
+            raise unittest.SkipTest(f"libusb-1.0 not available: {e}")
+
+    def test_missed_packets_reported_like_linux(self):
+        from usbshare.protocol import IsoPacket
+        dev = RealIsoDev([])
+        s = LibusbSession(backend_for(dev), dev, reset=False)
+        iso = [IsoPacket(i * 96, 96) for i in range(3)]
+        cmd = SubmitCmd(1, 0, P.USBIP_DIR_IN, 1, P.URB_ISO_ASAP, 288, 0, 3, 1, b"\0" * 8, b"", iso)
+        out = []
+        s.submit(cmd, lambda q, r: out.append(r))
+        s.handle.transfers[-1].complete_iso([(b"A" * 96, 96), (None, 0, usb1.TRANSFER_ERROR),
+                                             (b"C" * 96, 96)])
+        r = out[0]
+        self.assertEqual(r.status, 0)
+        self.assertEqual([p.status for p in r.iso_packets], [0, -P.EXDEV, 0])
+        self.assertEqual(r.error_count, 1)
+        self.assertIn("nicht übertragen 1", s.summary())
+
+    def test_silence_is_detected(self):
+        from usbshare.protocol import IsoPacket
+        dev = RealIsoDev([])
+        s = LibusbSession(backend_for(dev), dev, reset=False)
+        for seq, payload in ((1, bytes(192)), (2, b"\x01" * 192)):
+            cmd = SubmitCmd(seq, 0, P.USBIP_DIR_OUT, 1, P.URB_ISO_ASAP, 192, 0, 1, 1, b"\0" * 8,
+                            payload, [IsoPacket(0, 192)])
+            s.submit(cmd, lambda q, r: None)
+            s.handle.transfers[-1].complete_iso([(None, 192)])
+        self.assertIn("nur Stille 1×", s.summary())

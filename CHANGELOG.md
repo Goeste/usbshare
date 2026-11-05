@@ -6,6 +6,21 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.5.1] – 2026-11-05
+
+### Behoben
+- **Mikrofon (USB-Audio) funktionierte nur kurz.** Nicht übertragene Audio-Pakete wurden als
+  harter Protokollfehler (`-EPROTO`) an den Client gemeldet; der Windows-Audiotreiber hat den
+  Datenstrom daraufhin gestoppt. Sie werden jetzt wie beim Linux-usbip-Server als
+  „nicht übertragen“ (`-EXDEV`) gemeldet, die Windows einfach überspringt.
+
+### Hinzugefügt
+- Audio-Diagnose im Log: Art der Paketfehler je Endpoint, ob Windows nur Stille sendet,
+  `SET_INTERFACE` und Audio-Klassenanfragen (Abtastrate, Lautstärke, Stumm) samt Ergebnis.
+
+### Geändert
+- `usbshare update`: Fortschrittsanzeige in 5-%-Schritten.
+
 ## [0.5.0] – 2026-11-05
 
 ### Hinzugefügt
@@ -139,7 +154,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/Goeste/usbshare/releases/tag/v0.5.1
 [0.5.0]: https://github.com/Goeste/usbshare/releases/tag/v0.5.0
 [0.4.7]: https://github.com/Goeste/usbshare/releases/tag/v0.4.7
 [0.4.6]: https://github.com/Goeste/usbshare/releases/tag/v0.4.6

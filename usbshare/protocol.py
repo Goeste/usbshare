@@ -54,6 +54,7 @@ URB_ZERO_PACKET = 0x0040
 
 # Linux errno values used as URB status
 ENOENT = 2
+EXDEV = 18
 ENODEV = 19
 EPIPE = 32
 EOVERFLOW = 75
