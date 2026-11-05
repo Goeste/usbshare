@@ -46,21 +46,27 @@ class Release:
     assets: Dict[str, dict] = field(default_factory=dict)   # name -> {url, size, digest}
 
     def asset(self, kind: str) -> Optional[str]:
-        """kind: 'client', 'server' (this platform), 'server-linux' or 'server-windows'."""
-        if kind == "server":
-            kind = "server-windows" if IS_WIN else "server-linux"
-        prefix = PACKAGES[kind]
-        for name in self.assets:
-            if name.startswith(prefix) and name.endswith(".zip"):
-                return name
+        """kind: 'client', 'server' (this platform), 'server-linux' or 'server-windows'.
+
+        Package names: usbshare-<role>-<version>-<os>-<arch>.zip (os: linux / win, arch: x64);
+        names used up to 0.7.0 are still recognised."""
+        role, _, osname = kind.partition("-")
+        if role == "client":
+            osname = "win"
+        osname = {"": "win" if IS_WIN else "linux", "windows": "win"}.get(osname, osname)
+        current = re.compile(rf"^usbshare-{role}-[\d.]+-{osname}-{ARCH}\.zip$")
+        legacy = {("client", "win"): r"^usbshare-client-[\d.]+-windows\.zip$",
+                  ("server", "linux"): r"^usbshare-server-[\d.]+(-linux)?\.zip$",
+                  ("server", "win"): r"^usbshare-windows-server-[\d.]+\.zip$"}.get((role, osname))
+        for pattern in (current, legacy):
+            for name in self.assets:
+                if pattern and re.match(pattern, name):
+                    return name
         return None
 
 
 IS_WIN = sys.platform.startswith("win")
-# Package name prefixes. 'usbshare-server-' is the Linux package (old versions shipped
-# Linux + Windows together under that name – their updaters still find it).
-PACKAGES = {"client": "usbshare-client-", "server-linux": "usbshare-server-",
-            "server-windows": "usbshare-windows-server-"}
+ARCH = "x64"                 # all packages are built for 64-bit x86
 
 
 def _ssl_context() -> ssl.SSLContext:

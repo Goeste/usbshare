@@ -57,7 +57,7 @@ class VersionTest(unittest.TestCase):
 class DownloadTest(unittest.TestCase):
     def test_checksum_from_sums_file(self):
         z = make_zip({"usbshare-client/usbshare-client.exe": b"MZ new"})
-        rel, get = fake_release("9.9.9", {"usbshare-client-9.9.9-windows.zip": z})
+        rel, get = fake_release("9.9.9", {"usbshare-client-9.9.9-win-x64.zip": z})
         with mock.patch.object(U, "_get", get):
             zf = U.download_package(rel, "client")
         self.assertEqual(U.extract_member(zf, "/usbshare-client.exe"), b"MZ new")
@@ -93,7 +93,7 @@ class LinuxServerUpdate(unittest.TestCase):
     def _run(self, new_binary):
         z = make_zip({"usbshare-server/linux/usbshare": new_binary,
                       "usbshare-server/linux/usbshare.service": b"[Unit]\n"})
-        rel, get = fake_release("9.9.9", {"usbshare-server-9.9.9.zip": z})
+        rel, get = fake_release("9.9.9", {"usbshare-server-9.9.9-linux-x64.zip": z})
         args = cli.argparse.Namespace(check=False, yes=True, force=False)
         with mock.patch.object(U, "latest_release", return_value=rel), \
                 mock.patch.object(U, "_get", get), \
@@ -134,7 +134,7 @@ class WindowsExeSwap(unittest.TestCase):
         exe = os.path.join(d, "usbshare-client.exe")
         open(exe, "wb").write(b"MZ old")
         z = make_zip({"usbshare-client/usbshare-client.exe": b"MZ new"})
-        rel, get = fake_release("9.9.9", {"usbshare-client-9.9.9-windows.zip": z})
+        rel, get = fake_release("9.9.9", {"usbshare-client-9.9.9-win-x64.zip": z})
         with mock.patch.object(U, "_get", get), \
                 mock.patch.object(U, "frozen_executable", return_value=exe), \
                 mock.patch.dict(os.environ, {"_PYI_APPLICATION_HOME_DIR": "C:/old/_MEI1",

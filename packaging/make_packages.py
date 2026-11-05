@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Goeste – usbshare (siehe LICENSE und NOTICE)
 """Assemble the download packages from built binaries.
 
-    python packaging/make_packages.py --version 0.7.0 --bins <dir> --out <dir> [--usbip <dir>]
+    python packaging/make_packages.py --version 0.7.1 --bins <dir> --out <dir> [--usbip <dir>]
 
 <dir> must contain (whatever is missing is skipped with a warning):
     usbshare-linux-x86_64           Linux server (+ server window)
@@ -13,10 +13,10 @@
 --usbip <dir>: usbip-win2 installer (USBip-<v>-x64-Release.exe) and its LICENSE.txt,
 bundled with the client.
 
-Result:
-    usbshare-server-<version>-linux.zip     Linux server (+ server window)
-    usbshare-windows-server-<version>.zip   Windows server + server window
-    usbshare-client-<version>-windows.zip   Windows client (+ usbip-win2 installer)
+Result (scheme: usbshare-<role>-<version>-<os>-<arch>.zip):
+    usbshare-server-<version>-linux-x64.zip   Linux server (+ server window)    usbshare-server/linux/
+    usbshare-server-<version>-win-x64.zip     Windows server + server window    usbshare-server/win/
+    usbshare-client-<version>-win-x64.zip     Windows client (+ usbip-win2)     usbshare-client/
 """
 import argparse
 import glob
@@ -27,6 +27,7 @@ import sys
 import tempfile
 import zipfile
 
+ARCH = "x64"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
@@ -94,16 +95,18 @@ def main():
     p = binary("usbshare-linux-x86_64")
     if p:
         _copy(p, os.path.join(srv, "linux", "usbshare"), 0o755)
-    _zip(srv, os.path.join(a.out, f"usbshare-server-{a.version}-linux.zip"))
+    _zip(srv, os.path.join(a.out, f"usbshare-server-{a.version}-linux-{ARCH}.zip"))
+    shutil.rmtree(srv)
 
     # Windows server
-    win = package("usbshare-windows-server", os.path.join(HERE, "server", "LIESMICH.md"))
+    srv = package("usbshare-server", os.path.join(HERE, "server", "LIESMICH.md"))
+    win = os.path.join(srv, "win")
     scripts("windows", win, "\r\n")
     for name in ("usbshare.exe", "usbshare-server-gui.exe"):
         p = binary(name)
         if p:
             _copy(p, os.path.join(win, name))
-    _zip(win, os.path.join(a.out, f"usbshare-windows-server-{a.version}.zip"))
+    _zip(srv, os.path.join(a.out, f"usbshare-server-{a.version}-win-{ARCH}.zip"))
 
     # Windows client (+ usbip-win2)
     cli = package("usbshare-client", os.path.join(HERE, "client", "LIESMICH.md"))
@@ -127,7 +130,7 @@ def main():
             print("WARNUNG: LICENSE.txt von usbip-win2 fehlt")
     else:
         print("WARNUNG: usbip-win2-Installationsprogramm fehlt – Client-Paket ohne Treiber")
-    _zip(cli, os.path.join(a.out, f"usbshare-client-{a.version}-windows.zip"))
+    _zip(cli, os.path.join(a.out, f"usbshare-client-{a.version}-win-{ARCH}.zip"))
     shutil.rmtree(work)
     print("Pakete erstellt in", a.out)
 

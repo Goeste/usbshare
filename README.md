@@ -44,9 +44,11 @@ Fertige Pakete gibt es unter **[Releases](../../releases)**:
 
 | Paket | Für |
 |---|---|
-| `usbshare-server-<version>-linux.zip` | Server unter **Linux** (Rechner mit den USB-Geräten) |
-| `usbshare-windows-server-<version>.zip` | Server unter **Windows** (Rechner mit den USB-Geräten) |
-| `usbshare-client-<version>-windows.zip` | die Windows-VM bzw. den Windows-PC, der die Geräte nutzt – mit usbip-win2 |
+| `usbshare-server-<version>-linux-x64.zip` | Server unter **Linux** (Rechner mit den USB-Geräten) |
+| `usbshare-server-<version>-win-x64.zip` | Server unter **Windows** (Rechner mit den USB-Geräten) |
+| `usbshare-client-<version>-win-x64.zip` | die Windows-VM bzw. den Windows-PC, der die Geräte nutzt – mit usbip-win2 |
+
+Alle Pakete heißen nach dem Schema `usbshare-<server|client>-<version>-<linux|win>-<architektur>.zip`.
 
 Die Anleitungen liegen als `LIESMICH.md` in den Paketen
 ([Server](packaging/server/LIESMICH.md), [Client](packaging/client/LIESMICH.md)).
@@ -87,7 +89,7 @@ Eine Signierung (über die SignPath Foundation für Open-Source-Projekte) ist ge
 **Server unter Linux**
 
 ```bash
-unzip usbshare-server-<version>-linux.zip
+unzip usbshare-server-<version>-linux-x64.zip
 cd usbshare-server/linux
 sudo ./install.sh
 ```
@@ -96,7 +98,7 @@ sudo ./install.sh
 installieren, dann PowerShell als Administrator:
 
 ```powershell
-cd usbshare-windows-server
+cd usbshare-server\win
 Set-ExecutionPolicy -Scope Process Bypass
 .\install-service.ps1 -UsbDk
 ```
@@ -147,7 +149,7 @@ pip install pyinstaller libusb1 sv-ttk pillow
 python build.py              # usbshare(.exe): Server + Kommandozeile (+ Server-Fenster unter Linux)
 python build.py gui          # usbshare-client.exe
 python build.py server-gui   # usbshare-server-gui.exe
-python packaging/make_packages.py --version 0.7.0 --bins dist --out out --usbip <ordner>
+python packaging/make_packages.py --version 0.7.1 --bins dist --out out --usbip <ordner>
 ```
 
 **Releases per GitHub Actions:** Version in `usbshare/__init__.py` erhöhen, den Abschnitt in

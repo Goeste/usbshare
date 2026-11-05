@@ -4,6 +4,7 @@
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -20,29 +21,41 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class PackageSelection(unittest.TestCase):
-    NAMES = ["usbshare-server-0.7.0-linux.zip", "usbshare-windows-server-0.7.0.zip",
-             "usbshare-client-0.7.0-windows.zip", "SHA256SUMS.txt"]
+    NAMES = ["usbshare-server-0.7.1-linux-x64.zip", "usbshare-server-0.7.1-win-x64.zip",
+             "usbshare-client-0.7.1-win-x64.zip", "SHA256SUMS.txt"]
 
     def rel(self, names):
-        return U.Release("0.7.0", "", "", {n: {"url": n} for n in names})
+        return U.Release("0.7.1", "", "", {n: {"url": n} for n in names})
+
+    def test_names_follow_one_scheme(self):
+        pat = re.compile(r"^usbshare-(server|client)-\d+\.\d+\.\d+-(linux|win)-x64\.zip$")
+        for n in self.NAMES[:-1]:
+            self.assertRegex(n, pat)
 
     def test_new_names(self):
         r = self.rel(self.NAMES)
-        self.assertEqual(r.asset("client"), "usbshare-client-0.7.0-windows.zip")
-        self.assertEqual(r.asset("server-linux"), "usbshare-server-0.7.0-linux.zip")
-        self.assertEqual(r.asset("server-windows"), "usbshare-windows-server-0.7.0.zip")
+        self.assertEqual(r.asset("client"), "usbshare-client-0.7.1-win-x64.zip")
+        self.assertEqual(r.asset("server-linux"), "usbshare-server-0.7.1-linux-x64.zip")
+        self.assertEqual(r.asset("server-windows"), "usbshare-server-0.7.1-win-x64.zip")
+
+    def test_order_does_not_matter(self):
+        r = self.rel(list(reversed(self.NAMES)))
+        self.assertEqual(r.asset("server-linux"), "usbshare-server-0.7.1-linux-x64.zip")
+        self.assertEqual(r.asset("server-windows"), "usbshare-server-0.7.1-win-x64.zip")
 
     def test_server_follows_platform(self):
         r = self.rel(self.NAMES)
         with mock.patch.object(U, "IS_WIN", True):
-            self.assertEqual(r.asset("server"), "usbshare-windows-server-0.7.0.zip")
+            self.assertEqual(r.asset("server"), "usbshare-server-0.7.1-win-x64.zip")
         with mock.patch.object(U, "IS_WIN", False):
-            self.assertEqual(r.asset("server"), "usbshare-server-0.7.0-linux.zip")
+            self.assertEqual(r.asset("server"), "usbshare-server-0.7.1-linux-x64.zip")
 
-    def test_old_updaters_still_find_the_linux_package(self):
-        # 0.6.x picks the first asset starting with "usbshare-server-"
-        old = [n for n in self.NAMES if n.startswith("usbshare-server-") and n.endswith(".zip")]
-        self.assertEqual(old, ["usbshare-server-0.7.0-linux.zip"])
+    def test_names_up_to_0_7_0(self):
+        r = self.rel(["usbshare-server-0.7.0-linux.zip", "usbshare-windows-server-0.7.0.zip",
+                      "usbshare-client-0.7.0-windows.zip"])
+        self.assertEqual(r.asset("client"), "usbshare-client-0.7.0-windows.zip")
+        self.assertEqual(r.asset("server-linux"), "usbshare-server-0.7.0-linux.zip")
+        self.assertEqual(r.asset("server-windows"), "usbshare-windows-server-0.7.0.zip")
 
     def test_combined_package_of_old_releases(self):
         r = self.rel(["usbshare-server-0.6.4.zip"])
@@ -50,6 +63,14 @@ class PackageSelection(unittest.TestCase):
             self.assertEqual(r.asset("server"), "usbshare-server-0.6.4.zip")
         with mock.patch.object(U, "IS_WIN", True):
             self.assertIsNone(r.asset("server"))
+
+    def test_old_updaters_still_work(self):
+        """Up to 0.7.0 the client takes the first 'usbshare-client-…zip' and the Linux server
+        the first 'usbshare-server-…zip' (the release uploads the Linux package first)."""
+        old_client = [n for n in self.NAMES if n.startswith("usbshare-client-") and n.endswith(".zip")]
+        self.assertEqual(old_client, ["usbshare-client-0.7.1-win-x64.zip"])
+        old_server = [n for n in self.NAMES if n.startswith("usbshare-server-") and n.endswith(".zip")]
+        self.assertEqual(old_server[0], "usbshare-server-0.7.1-linux-x64.zip")
 
 
 class DriverChoice(unittest.TestCase):
@@ -159,9 +180,10 @@ class WindowsServerUpdate(unittest.TestCase):
                 f.write(b"MZ old")
 
     def _run(self, starts=True):
-        z = make_zip({"usbshare-windows-server/usbshare.exe": b"MZ new server",
-                      "usbshare-windows-server/usbshare-server-gui.exe": b"MZ new gui"})
-        rel, get = fake_release("9.9.9", {"usbshare-windows-server-9.9.9.zip": z})
+        z = make_zip({"usbshare-server/win/usbshare.exe": b"MZ new server",
+                      "usbshare-server/win/usbshare-server-gui.exe": b"MZ new gui"})
+        rel, get = fake_release("9.9.9", {"usbshare-server-9.9.9-linux-x64.zip": make_zip({"x": b""}),
+                                          "usbshare-server-9.9.9-win-x64.zip": z})
         args = cli.argparse.Namespace(check=False, yes=True, force=False, report=None)
         calls = []
 
@@ -227,23 +249,24 @@ class Packages(unittest.TestCase):
                         "--version", "9.9.9", "--bins", bins, "--out", out, "--usbip", usbip],
                        check=True, capture_output=True)
         self.assertEqual(sorted(os.listdir(out)), [
-            "usbshare-client-9.9.9-windows.zip", "usbshare-server-9.9.9-linux.zip",
-            "usbshare-windows-server-9.9.9.zip"])
+            "usbshare-client-9.9.9-win-x64.zip", "usbshare-server-9.9.9-linux-x64.zip",
+            "usbshare-server-9.9.9-win-x64.zip"])
         names = lambda z: set(zipfile.ZipFile(os.path.join(out, z)).namelist())  # noqa: E731
-        lin = names("usbshare-server-9.9.9-linux.zip")
+        lin = names("usbshare-server-9.9.9-linux-x64.zip")
         self.assertIn("usbshare-server/linux/usbshare", lin)
         self.assertFalse([n for n in lin if n.endswith(".exe")])
-        win = names("usbshare-windows-server-9.9.9.zip")
-        for n in ("usbshare.exe", "usbshare-server-gui.exe", "install-service.ps1", "usbshare.toml",
-                  "LICENSE", "NOTICE"):
-            self.assertIn(f"usbshare-windows-server/{n}", win)
-        cl = names("usbshare-client-9.9.9-windows.zip")
+        win = names("usbshare-server-9.9.9-win-x64.zip")
+        for n in ("win/usbshare.exe", "win/usbshare-server-gui.exe", "win/install-service.ps1",
+                  "win/usbshare.toml", "LICENSE", "NOTICE", "LIESMICH.md"):
+            self.assertIn(f"usbshare-server/{n}", win)
+        self.assertFalse([n for n in win if "/linux/" in n])
+        cl = names("usbshare-client-9.9.9-win-x64.zip")
         for n in ("usbshare-client.exe", "usbip-win2/USBip-0.9.8.1-x64-Release.exe",
                   "usbip-win2/LICENSE.txt", "usbip-win2/SHA256SUMS.txt"):
             self.assertIn(f"usbshare-client/{n}", cl)
         # the client finds and verifies the bundled installer
         d = tempfile.mkdtemp()
-        zipfile.ZipFile(os.path.join(out, "usbshare-client-9.9.9-windows.zip")).extractall(d)
+        zipfile.ZipFile(os.path.join(out, "usbshare-client-9.9.9-win-x64.zip")).extractall(d)
         b = driver.bundled(os.path.join(d, "usbshare-client", "usbip-win2"))
         self.assertEqual(b.version, "0.9.8.1")
         self.assertEqual(driver.fetch(b), b.path)

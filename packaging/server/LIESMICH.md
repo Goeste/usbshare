@@ -7,8 +7,8 @@
 Läuft auf dem Rechner, an dem die USB-Geräte **eingesteckt** sind, und bietet sie im
 Netzwerk an. Die VM bindet sie mit dem **usbshare Client** ein (Paket `usbshare-client`).
 
-Pakete: `usbshare-server-<version>-linux.zip` (Linux) und
-`usbshare-windows-server-<version>.zip` (Windows).
+Pakete: `usbshare-server-<version>-linux-x64.zip` (Linux, Ordner `linux`) und
+`usbshare-server-<version>-win-x64.zip` (Windows, Ordner `win`).
 
 Am Server legst du fest:
 
@@ -23,12 +23,12 @@ Das geht bequem im Fenster **usbshare Server** (siehe unten) oder in der Datei
 
 ### Windows
 
-1. `usbshare-windows-server-<version>.zip` entpacken.
+1. `usbshare-server-<version>-win-x64.zip` entpacken.
 2. **Treiber**: Windows lässt Programme nicht ohne Weiteres auf USB-Geräte zugreifen.
    * Empfohlen: **UsbDk** installieren (github.com/daynix/UsbDk/releases, `UsbDk_*_x64.msi`).
      Funktioniert mit allen Geräten, ohne Treiber zu tauschen.
    * Alternativ: mit **Zadig** dem einzelnen Gerät den Treiber „WinUSB“ zuweisen.
-3. PowerShell **als Administrator** im Ordner öffnen:
+3. PowerShell **als Administrator** im Ordner `usbshare-server\win` öffnen:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass

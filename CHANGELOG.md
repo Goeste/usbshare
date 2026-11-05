@@ -6,6 +6,19 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.7.1] – 2026-11-05
+
+### Geändert
+- **Einheitliche Paketnamen** nach dem Schema `usbshare-<server|client>-<version>-<os>-<arch>.zip`:
+  `usbshare-server-<version>-linux-x64.zip`, `usbshare-server-<version>-win-x64.zip`,
+  `usbshare-client-<version>-win-x64.zip`. Das Windows-Server-Paket ist wie das Linux-Paket
+  aufgebaut (Ordner `usbshare-server\win`).
+- Die Updater erkennen die neuen und die bisherigen Namen. Der Linux-Server (alle
+  Versionen) und der Client aktualisieren sich wie gewohnt. **Ausnahme:** Ein Windows-Server
+  mit 0.7.0 sucht noch nach dem alten Namen und findet 0.7.1 nicht – dort einmal von Hand
+  aktualisieren (Paket entpacken, `install-service.ps1` erneut ausführen); danach geht es
+  wieder per Klick.
+
 ## [0.7.0] – 2026-11-05
 
 ### Hinzugefügt
@@ -244,7 +257,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/Goeste/usbshare/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Goeste/usbshare/releases/tag/v0.7.0
 [0.6.4]: https://github.com/Goeste/usbshare/releases/tag/v0.6.4
 [0.6.3]: https://github.com/Goeste/usbshare/releases/tag/v0.6.3
