@@ -410,19 +410,22 @@ class LibusbSession(DeviceSession):
         try:
             status = _STATUS.get(t.getStatus(), -P.EPROTO)
             is_in = cmd.direction == P.USBIP_DIR_IN
+            # Interrupt IN (keys, buttons, HID): an URB may wait for data indefinitely anyway,
+            # so keep retrying until the device answers again – the client never sees it.
+            endless = is_in and self._epmap.get(cmd.endpoint_address) == XFER_INTERRUPT
             if (status == -P.EPROTO and cmd.ep != 0 and not cmd.iso_packets
-                    and self._retries.get(cmd.seqnum, 0) < RETRIES):
+                    and (endless or self._retries.get(cmd.seqnum, 0) < RETRIES)):
                 # Transient transaction error (CRC/timeout on the wire). A host controller
                 # retries these itself; passing them to the client makes Windows treat the
                 # device as faulty (HID error recovery) and can stall the whole device.
                 n = self._retries[cmd.seqnum] = self._retries.get(cmd.seqnum, 0) + 1
                 self._retry_count[cmd.endpoint_address] += 1
-                if self._retry_count[cmd.endpoint_address] in (1, 10, 100, 1000):
+                if self._retry_count[cmd.endpoint_address] in (1, 10, 100, 1000, 10000):
                     log.info("%s: Übertragungsfehler auf Endpoint 0x%02x – wird wiederholt "
                              "(bisher %d×)", self.busid, cmd.endpoint_address,
                              self._retry_count[cmd.endpoint_address])
                 t.doom()
-                threading.Timer(0.002 * n, self._retry, args=(cmd, done)).start()
+                threading.Timer(min(0.002 * n, 0.1), self._retry, args=(cmd, done)).start()
                 return
             self._retries.pop(cmd.seqnum, None)
             if cmd.iso_packets:

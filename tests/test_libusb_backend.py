@@ -642,7 +642,16 @@ class TransientErrorRetry(unittest.TestCase):
         self.assertEqual((self.out[0].status, self.out[0].data), (0, b"\x01\x02\x03"))
         self.assertIn("wiederholt 0x84: 2×", self.s.summary())
 
-    def test_gives_up_after_three_retries(self):
+    def test_interrupt_in_is_retried_until_it_works(self):
+        for n in range(2, 12):                                  # far more than 3 failures
+            self._fail(self.s.handle.transfers[-1])
+            self._wait_transfers(n)
+        self.assertEqual(self.out, [])                          # Windows never sees an error
+        self.s.handle.transfers[-1].complete(b"\x05", offset=0)
+        self.assertEqual((self.out[0].status, self.out[0].data), (0, b"\x05"))
+
+    def test_bulk_gives_up_after_three_retries(self):
+        self.s._epmap[0x84] = 2                                 # pretend it is a bulk endpoint
         for n in range(2, 5):
             self._fail(self.s.handle.transfers[-1])
             self._wait_transfers(n)
