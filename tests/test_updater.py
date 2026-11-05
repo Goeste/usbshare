@@ -137,11 +137,16 @@ class WindowsExeSwap(unittest.TestCase):
         rel, get = fake_release("9.9.9", {"usbshare-client-9.9.9-windows.zip": z})
         with mock.patch.object(U, "_get", get), \
                 mock.patch.object(U, "frozen_executable", return_value=exe), \
+                mock.patch.dict(os.environ, {"_PYI_APPLICATION_HOME_DIR": "C:/old/_MEI1",
+                                             "TCL_LIBRARY": "C:/old/_MEI1/_tcl_data"}), \
                 mock.patch.object(update_ui.subprocess, "Popen") as popen:
             update_ui.install_windows_exe(rel, "client", "/usbshare-client.exe", lambda a, b: None)
         self.assertEqual(open(exe, "rb").read(), b"MZ new")
         self.assertEqual(open(exe + ".old", "rb").read(), b"MZ old")
         self.assertEqual(popen.call_args[0][0], [exe, "--after-update"])
+        env = popen.call_args[1]["env"]                  # new version starts with clean env
+        self.assertEqual(env.get("PYINSTALLER_RESET_ENVIRONMENT"), "1")
+        self.assertFalse([k for k in env if k.startswith("_PYI") or k == "TCL_LIBRARY"])
         with mock.patch.object(U, "frozen_executable", return_value=exe):
             update_ui.cleanup_old_exe()
         self.assertFalse(os.path.exists(exe + ".old"))

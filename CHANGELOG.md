@@ -6,6 +6,16 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.5.2] – 2026-11-05
+
+### Behoben
+- **Nach „Jetzt aktualisieren“ startete der Windows-Client mit „Can't find a usable
+  tk.tcl“.** Die neue Version erbte Umgebungsvariablen der alten und suchte ihre Dateien in
+  deren bereits gelöschtem Temp-Ordner. Sie startet jetzt in einer sauberen Umgebung.
+  Gleiches gilt für den Neustart des Linux-Server-Fensters nach einem Update.
+  Hinweis: Das Update *auf* 0.5.2 wird noch von der alten Version gestartet – falls die
+  Meldung dabei ein letztes Mal erscheint, den Client einfach von Hand neu starten.
+
 ## [0.5.1] – 2026-11-05
 
 ### Behoben
@@ -154,7 +164,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/Goeste/usbshare/releases/tag/v0.5.2
 [0.5.1]: https://github.com/Goeste/usbshare/releases/tag/v0.5.1
 [0.5.0]: https://github.com/Goeste/usbshare/releases/tag/v0.5.0
 [0.4.7]: https://github.com/Goeste/usbshare/releases/tag/v0.4.7

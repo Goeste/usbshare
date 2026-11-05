@@ -42,7 +42,20 @@ def install_windows_exe(rel: U.Release, kind: str, member: str,
         os.replace(new, exe)
     except OSError as e:
         raise U.UpdateError(f"Programmdatei konnte nicht ersetzt werden: {e}") from e
-    subprocess.Popen([exe, *restart_args], close_fds=True, creationflags=DETACHED)
+    subprocess.Popen([exe, *restart_args], close_fds=True, creationflags=DETACHED,
+                     env=clean_environment())
+
+
+def clean_environment() -> dict:
+    """Environment for starting the *new* program version from the running one.
+
+    A PyInstaller one-file program passes variables to its children so that they reuse its
+    unpacked files (_MEI… temp folder). The new version must not do that: the old one deletes
+    that folder when it exits ("Can't find a usable tk.tcl")."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(("_PYI", "_MEI")) and k not in ("TCL_LIBRARY", "TK_LIBRARY")}
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    return env
 
 
 def cleanup_old_exe() -> None:

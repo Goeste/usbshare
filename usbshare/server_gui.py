@@ -450,7 +450,8 @@ class ServerWindow:
         self.tray.stop()
         if exe and not IS_WIN:
             self.root.destroy()
-            os.execv(exe, [exe, "gui", "--port", str(self.port)])
+            from .update_ui import clean_environment
+            os.execve(exe, [exe, "gui", "--port", str(self.port)], clean_environment())
         messagebox.showinfo("usbshare Server", "Update installiert.")
 
     # -- window / tray -----------------------------------------------------------------
