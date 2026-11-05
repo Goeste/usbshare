@@ -69,6 +69,7 @@ class IsoOutStream:
         self.silence_packets = 0
         self.underruns = 0
         self.dropped_packets = 0
+        self.restarts = 0
         self.device_errors: Counter = Counter()
 
     # -- client side ----------------------------------------------------------------------
@@ -178,7 +179,11 @@ class IsoOutStream:
             log.warning("%s: audio buffer: device gone", self.name)
             self._fail_all(-P.ESHUTDOWN)
             return
-        if not stopping and status != usb1.TRANSFER_CANCELLED:
+        if not stopping:
+            if status != usb1.TRANSFER_COMPLETED:
+                # cancelled/failed by the system (e.g. endpoint reset) while we still run:
+                # keep the device fed instead of letting the stream die
+                self.restarts += 1
             self._submit_one()
 
     # -- helpers ----------------------------------------------------------------------------
@@ -228,6 +233,8 @@ class IsoOutStream:
              f"{self.underruns}× ({self.silence_packets} Pakete)")
         if self.dropped_packets:
             s += f", verworfen {self.dropped_packets} Pakete"
+        if self.restarts:
+            s += f", vom System abgebrochen und neu gestartet {self.restarts}×"
         if self.device_errors:
             s += ", Gerätefehler " + ", ".join(f"{k}: {n}" for k, n in self.device_errors.items())
         return s

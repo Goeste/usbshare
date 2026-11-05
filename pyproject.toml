@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "usbshare"
-version = "0.6.2"
+version = "0.6.3"
 description = "USB-Geräte über das Netzwerk an VMs durchreichen (USB/IP-kompatibler Server für Linux, Windows, macOS)"
 readme = "README.md"
 requires-python = ">=3.9"

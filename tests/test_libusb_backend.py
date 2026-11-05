@@ -574,6 +574,15 @@ class AudioBuffer(unittest.TestCase):
         self.assertEqual(self._payload(self._device()[-1])[:192], b"\x02" * 192)
         self.assertEqual([q for q, _ in self.done], [1, 2])
 
+    def test_stream_survives_system_cancel(self):
+        self._urb(1, 1)
+        t = self._device()[0]
+        tp = t._USBTransfer__transfer.contents
+        tp.status = usb1.TRANSFER_CANCELLED           # e.g. endpoint reset by the system
+        t.getCallback()(t)
+        self.assertEqual(len(self._device()), 4)      # resubmitted, stream keeps running
+        self.assertEqual(self.s._streams[0x01].restarts, 1)
+
     def test_underrun_inserts_silence_instead_of_gap(self):
         self._urb(1, 1)
         for t in list(self._device()):
@@ -664,3 +673,28 @@ class TransientErrorRetry(unittest.TestCase):
         time.sleep(0.05)
         self.assertEqual(self.out[0].status, -P.ECONNRESET)
         self.assertEqual(len(self.s.handle.transfers), 1)       # not resubmitted
+
+
+class IsoClearHalt(unittest.TestCase):
+    def test_clear_halt_on_iso_endpoint_is_not_sent(self):
+        log = []
+        dev = Dev(log)
+        s = LibusbSession(backend_for(dev), dev, reset=False)
+        s._epmap[0x01] = 1                       # isochronous OUT (audio)
+        out = []
+        setup = bytes([0x02, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00])   # CLEAR_FEATURE ep 0x01
+        s.submit(SubmitCmd(5, 0, P.USBIP_DIR_OUT, 0, 0, 0, 0, 0, 0, setup), lambda q, r: out.append(r))
+        self.assertEqual(out[0].status, 0)       # acknowledged ...
+        self.assertFalse(any(e[0] == "clear_halt" for e in log))   # ... but not done on Linux
+
+    def test_clear_halt_on_interrupt_endpoint_still_works(self):
+        log = []
+        dev = Dev(log)
+        s = LibusbSession(backend_for(dev), dev, reset=False)
+        s._epmap[0x84] = 3
+        s.handle.clearHalt = lambda ep: log.append(("clear_halt", ep))
+        out = []
+        setup = bytes([0x02, 0x01, 0x00, 0x00, 0x84, 0x00, 0x00, 0x00])
+        s.submit(SubmitCmd(6, 0, P.USBIP_DIR_OUT, 0, 0, 0, 0, 0, 0, setup), lambda q, r: out.append(r))
+        self.assertEqual(out[0].status, 0)
+        self.assertIn(("clear_halt", 0x84), log)

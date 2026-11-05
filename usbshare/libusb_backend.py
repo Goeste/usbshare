@@ -241,6 +241,7 @@ class LibusbSession(DeviceSession):
         self._iso_pkt_kind: Counter = Counter()      # (addr, libusb status) -> packets
         self._iso_silent: Counter = Counter()        # OUT URBs that carried only zeros
         self._ctrl_logged = 0
+        self._iso_clear_halt_ignored = 0
         self._retries: Dict[int, int] = {}            # seqnum -> retries done
         self._retry_cancelled: set = set()
         self._retry_count: Counter = Counter()        # endpoint -> retried transfers
@@ -616,7 +617,18 @@ class LibusbSession(DeviceSession):
                 finally:
                     self._log_ctrl(f"SET_INTERFACE Interface {idx} → Alternative {val}")
             elif rt == 0x02 and req == 0x01 and val == 0:  # CLEAR_FEATURE(ENDPOINT_HALT)
-                self.handle.clearHalt(idx & 0xFF)
+                ep = idx & 0xFF
+                if self._epmap.get(ep) == XFER_ISO:
+                    # Isochronous endpoints cannot halt. Windows sends this "reset pipe" when an
+                    # audio stream starts; doing it on Linux resets the *running* stream on the
+                    # host controller and the device loses its audio. A real controller never
+                    # sends it to the device either – acknowledge and do nothing.
+                    self._iso_clear_halt_ignored += 1
+                    if self._iso_clear_halt_ignored == 1:
+                        log.info("%s: CLEAR_HALT für Audio/Video-Endpoint 0x%02x ignoriert "
+                                 "(bei isochronen Endpoints wirkungslos)", self.busid, ep)
+                else:
+                    self.handle.clearHalt(ep)
             elif rt == 0x00 and req == 0x05:          # SET_ADDRESS: host already did this
                 pass
             elif rt == 0x23 and req == 0x03 and val == 4:

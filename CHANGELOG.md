@@ -6,6 +6,18 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.6.3] – 2026-11-05
+
+### Behoben
+- **Audio brach nach kurzer Zeit ab (Headsets).** Windows sendet beim Start eines
+  Audio-Stroms ein „Pipe zurücksetzen“ (`CLEAR_FEATURE ENDPOINT_HALT`) für den
+  Audio-Endpoint. Der Server hat das an Linux weitergegeben, das daraufhin den laufenden
+  Audio-Strom am USB-Controller zurückgesetzt hat (Kernel: „called USBDEVFS_CLEAR_HALT for
+  active endpoint“). Bei isochronen Endpoints ist diese Anfrage wirkungslos und wird jetzt –
+  wie von einem echten USB-Controller – nur bestätigt.
+- Der Audio-Puffer läuft weiter, wenn das System eine seiner Übertragungen abbricht, statt
+  stehen zu bleiben.
+
 ## [0.6.2] – 2026-11-05
 
 ### Behoben
@@ -200,7 +212,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/Goeste/usbshare/releases/tag/v0.6.3
 [0.6.2]: https://github.com/Goeste/usbshare/releases/tag/v0.6.2
 [0.6.1]: https://github.com/Goeste/usbshare/releases/tag/v0.6.1
 [0.6.0]: https://github.com/Goeste/usbshare/releases/tag/v0.6.0
