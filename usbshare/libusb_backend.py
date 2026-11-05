@@ -48,6 +48,7 @@ _LIBUSB_NAMES = {usb1.TRANSFER_ERROR: "nicht übertragen", usb1.TRANSFER_OVERFLO
                  usb1.TRANSFER_CANCELLED: "abgebrochen", usb1.TRANSFER_NO_DEVICE: "Gerät weg"}
 CONTROL_LOG_LIMIT = 300
 RETRIES = 3          # transparent retries of transient errors on interrupt/bulk endpoints
+RETRY_PAUSE = 0.004  # pause between retries of interrupt IN (keys, buttons)
 
 XFER_CONTROL, XFER_ISO, XFER_BULK, XFER_INTERRUPT = 0, 1, 2, 3
 _ERRNAME = {P.EPIPE: "stall", P.EPROTO: "protocol", P.ETIMEDOUT: "timeout",
@@ -426,7 +427,10 @@ class LibusbSession(DeviceSession):
                              "(bisher %d×)", self.busid, cmd.endpoint_address,
                              self._retry_count[cmd.endpoint_address])
                 t.doom()
-                threading.Timer(min(0.002 * n, 0.1), self._retry, args=(cmd, done)).start()
+                # short, fixed pause (≈ polling interval of keys/buttons): a growing back-off
+                # made e.g. a headset's volume wheel arrive late and lose steps
+                threading.Timer(RETRY_PAUSE if endless else 0.002 * n, self._retry,
+                                args=(cmd, done)).start()
                 return
             self._retries.pop(cmd.seqnum, None)
             if cmd.iso_packets:

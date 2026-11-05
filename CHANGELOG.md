@@ -6,6 +6,13 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.6.4] – 2026-11-05
+
+### Behoben
+- Tasten und Regler am Gerät (z. B. das Lautstärkerad eines Headsets) kamen verzögert und in
+  zu kleinen Schritten an: Wiederholungen nach Übertragungsfehlern warteten immer länger (bis
+  100 ms je Versuch). Jetzt wird im festen Abstand von 4 ms wiederholt.
+
 ## [0.6.3] – 2026-11-05
 
 ### Behoben
@@ -212,7 +219,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.6.4...HEAD
+[0.6.4]: https://github.com/Goeste/usbshare/releases/tag/v0.6.4
 [0.6.3]: https://github.com/Goeste/usbshare/releases/tag/v0.6.3
 [0.6.2]: https://github.com/Goeste/usbshare/releases/tag/v0.6.2
 [0.6.1]: https://github.com/Goeste/usbshare/releases/tag/v0.6.1
