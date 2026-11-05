@@ -21,8 +21,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
   testet die neue Version vorher und startet den Dienst neu.
 
 ### Geändert
-- **Deutlich kleinere Programme:** Windows-Server 21,7 → 8,5 MB, Client 20,6 → 11,1 MB,
-  Server-Fenster 20,6 → 11,1 MB, Linux-Server ca. 37 → 13,5 MB. Die Symbole liegen jetzt
+- **Deutlich kleinere Programme:** Windows-Server 21,7 → 9,5 MB, Client 20,6 → 12,1 MB,
+  Server-Fenster 20,6 → 12,1 MB, Linux-Server ca. 37 → 25,5 MB. Die Symbole liegen jetzt
   fertig bei (kein Pillow mehr zur Laufzeit), der Infobereich nutzt direkt die
   Windows-Funktionen (kein pystray mehr), nicht benötigte Teile von Python werden nicht
   mehr mitgeliefert, der Windows-Server enthält keine Oberflächen-Bibliotheken.

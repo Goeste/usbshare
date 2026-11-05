@@ -31,8 +31,8 @@ die die Geräte nutzen soll.
 - Control-, Bulk-, Interrupt- und isochrone Transfers (mit Audio-Puffer für Headsets);
   USB-Reset bei der Übergabe
 - **Updates per Klick** für Client, Linux- und Windows-Server
-- Schlank: einzelne Programmdateien ohne Installation von Python (Windows-Server 8,5 MB,
-  Client 11 MB, Linux-Server 13,5 MB)
+- Schlank: einzelne Programmdateien ohne Installation von Python (Windows-Server 9,5 MB,
+  Client 12 MB, Linux-Server 25 MB)
 
 | Server-Fenster | Client (dunkel) |
 |---|---|
