@@ -191,9 +191,13 @@ def cmd_update(a) -> int:
             print("Keine Eingabe möglich – mit --yes bestätigen.", file=sys.stderr)
             return 1
 
+    shown = [-1]
+
     def progress(done, total):
-        if total:
-            print(f"\rLade herunter … {done * 100 // total:3d} %", end="", flush=True)
+        pct = done * 100 // total if total else -1
+        if pct != shown[0] and (pct % 5 == 0 or pct == 100):
+            shown[0] = pct
+            print(f"\rLade herunter … {pct:3d} %", end="", flush=True)
     try:
         zf = U.download_package(rel, "server", progress)
         print("\rDownload geprüft (SHA-256 stimmt).      ")
