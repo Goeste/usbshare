@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional
 
 from . import updater as U
+from .i18n import _
 from .client import find_usbip_tool
 
 API_LATEST = "https://api.github.com/repos/vadimgrn/usbip-win2/releases/latest"
@@ -43,10 +44,6 @@ class Installer:
     url: str = ""                # github: download URL
     sha256: str = ""
     size: int = 0
-
-    @property
-    def label(self) -> str:
-        return "im Paket enthalten" if self.source == "bundled" else "von GitHub"
 
 
 def installed_version() -> Optional[str]:
@@ -129,8 +126,8 @@ def fetch(inst: Installer, progress: Optional[Callable[[int, int], None]] = None
     """Local path of the verified installer (downloads it if needed)."""
     if inst.source == "bundled":
         if inst.sha256 and _sha256_file(inst.path) != inst.sha256:
-            raise U.UpdateError("Das mitgelieferte usbip-win2-Installationsprogramm ist "
-                                "beschädigt – bitte das Client-Paket neu herunterladen.")
+            raise U.UpdateError(_("Das mitgelieferte usbip-win2-Installationsprogramm ist "
+                                  "beschädigt – bitte das Client-Paket neu herunterladen."))
         return inst.path
     data = U.verified_download(inst.url, inst.sha256, timeout=300, progress=progress)
     path = os.path.join(tempfile.mkdtemp(prefix="usbshare-"), f"USBip-{inst.version}-x64.exe")
@@ -146,12 +143,12 @@ def run_installer(path: str) -> None:
         r = subprocess.run([path, *SILENT, f"/LOG={log}"], creationflags=CREATE_NO_WINDOW
                            if sys.platform.startswith("win") else 0)
     except OSError as e:
-        raise U.UpdateError(f"Installationsprogramm konnte nicht gestartet werden: {e}") from e
+        raise U.UpdateError(_("Installationsprogramm konnte nicht gestartet werden: {error}", error=e)) from e
     if r.returncode != 0:
         # Inno Setup exit codes: 2 = cancelled before install, 5 = cancelled during install,
         # 7 = preparation failed (e.g. old version could not be removed)
-        raise U.UpdateError(f"Das Setup von usbip-win2 endete mit Code {r.returncode}. "
-                            f"Protokoll: {log}")
+        raise U.UpdateError(_("Das Setup von usbip-win2 endete mit Code {code}. Protokoll: {log}",
+                              code=r.returncode, log=log))
 
 
 def reboot() -> None:

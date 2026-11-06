@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Tuple
 
 from . import __url__, __version__
+from .i18n import _
 
 API_LATEST = "https://api.github.com/repos/Goeste/usbshare/releases/latest"
 RELEASES_PAGE = __url__.rstrip("/") + "/releases/latest"
@@ -50,7 +51,7 @@ class Release:
 
         Package names: usbshare-<role>-<version>-<os>-<arch>.zip (os: linux / win, arch: x64);
         names used up to 0.7.0 are still recognised."""
-        role, _, osname = kind.partition("-")
+        role, _sep, osname = kind.partition("-")
         if role == "client":
             osname = "win"
         osname = {"": "win" if IS_WIN else "linux", "windows": "win"}.get(osname, osname)
@@ -107,17 +108,17 @@ def _get(url: str, timeout: float = 20.0, accept: str = "application/octet-strea
                     progress(buf.tell(), total)
             return buf.getvalue()
     except OSError as e:
-        raise UpdateError(f"Keine Verbindung zu GitHub: {e}") from e
+        raise UpdateError(_("Keine Verbindung zu GitHub: {error}", error=e)) from e
 
 
 def latest_release() -> Release:
     try:
         data = json.loads(_get(API_LATEST, accept="application/vnd.github+json").decode())
     except ValueError as e:
-        raise UpdateError("Ungültige Antwort von GitHub") from e
+        raise UpdateError(_("Ungültige Antwort von GitHub")) from e
     tag = data.get("tag_name") or ""
     if not tag:
-        raise UpdateError("Kein Release gefunden")
+        raise UpdateError(_("Kein Release gefunden"))
     assets = {a["name"]: {"url": a["browser_download_url"], "size": a.get("size", 0),
                           "digest": a.get("digest") or ""}
               for a in data.get("assets", [])}
@@ -142,7 +143,7 @@ def verified_download(url: str, sha256: str, timeout: float = 120,
                       progress: Optional[Callable[[int, int], None]] = None) -> bytes:
     data = _get(url, timeout=timeout, progress=progress)
     if hashlib.sha256(data).hexdigest() != sha256.lower():
-        raise UpdateError("Prüfsumme stimmt nicht – Download beschädigt, Update abgebrochen")
+        raise UpdateError(_("Prüfsumme stimmt nicht – Download beschädigt, Update abgebrochen"))
     return data
 
 
@@ -151,22 +152,22 @@ def download_package(rel: Release, kind: str,
     """Download and verify the release package; returns the opened zip."""
     name = rel.asset(kind)
     if not name:
-        raise UpdateError(f"Das Release {rel.version} enthält kein {kind}-Paket")
+        raise UpdateError(_("Das Release {v} enthält kein {kind}-Paket", v=rel.version, kind=kind))
     expected = _expected_sha256(rel, name)
     if not expected:
-        raise UpdateError("Für das Paket gibt es keine Prüfsumme – Update abgebrochen")
+        raise UpdateError(_("Für das Paket gibt es keine Prüfsumme – Update abgebrochen"))
     data = verified_download(rel.assets[name]["url"], expected, progress=progress)
     try:
         return zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile as e:
-        raise UpdateError("Das heruntergeladene Paket ist beschädigt") from e
+        raise UpdateError(_("Das heruntergeladene Paket ist beschädigt")) from e
 
 
 def extract_member(zf: zipfile.ZipFile, suffix: str) -> bytes:
     for n in zf.namelist():
         if n.replace("\\", "/").endswith(suffix):
             return zf.read(n)
-    raise UpdateError(f"{suffix} fehlt im Paket")
+    raise UpdateError(_("{file} fehlt im Paket", file=suffix))
 
 
 def short_notes(notes: str, limit: int = 1800) -> str:

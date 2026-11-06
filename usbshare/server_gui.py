@@ -18,11 +18,12 @@ from typing import List, Optional
 
 from . import __author__, __url__, __version__
 from . import protocol as P
+from .i18n import _
 from .client import admin_request
 from .gui import Dialog
 from .gui_model import device_label
-from .ui_common import (IS_WIN, SingleInstance, Tray, UiQueue, apply_theme, header,
-                        run_key_enabled, set_run_key, show_window)
+from .ui_common import (IS_WIN, SingleInstance, Tray, UiQueue, add_language_menu, apply_theme,
+                        header, restart_program, run_key_enabled, set_run_key, show_window)
 
 RUN_NAME = "usbshare Server"
 INSTANCE_PORT = 47322
@@ -48,7 +49,7 @@ class ClientPicker(Dialog):
         self.mode = tk.StringVar(value="some" if selected else "all")
         ttk.Radiobutton(b, text=all_label, value="all", variable=self.mode,
                         command=self._update).pack(anchor="w")
-        ttk.Radiobutton(b, text="Nur diese Clients:", value="some", variable=self.mode,
+        ttk.Radiobutton(b, text=_("Nur diese Clients:"), value="some", variable=self.mode,
                         command=self._update).pack(anchor="w", pady=(6, 4))
         box = ttk.Frame(b, padding=(28, 0, 0, 0))
         box.pack(fill="x")
@@ -57,22 +58,22 @@ class ClientPicker(Dialog):
         for c in known:
             v = tk.BooleanVar(value=c["ip"] in selected)
             cb = ttk.Checkbutton(box, text=_client_text(c["ip"], c.get("name", "")) +
-                                 ("" if c.get("allowed", True) else "   (zurzeit abgelehnt)"),
+                                 ("" if c.get("allowed", True) else "   " + _("(zurzeit abgelehnt)")),
                                  variable=v)
             cb.pack(anchor="w", pady=1)
             self.vars.append((c["ip"], v, cb))
             known_ips.append(c["ip"])
         if not known:
-            ttk.Label(box, style="Muted.TLabel", text="Noch hat sich kein Client gemeldet.").pack(anchor="w")
-        ttk.Label(box, text="Weitere IPs oder Netze, mit Komma getrennt (z. B. 192.168.1.60, 10.0.0.0/24)",
+            ttk.Label(box, style="Muted.TLabel", text=_("Noch hat sich kein Client gemeldet.")).pack(anchor="w")
+        ttk.Label(box, text=_("Weitere IPs oder Netze, mit Komma getrennt (z. B. 192.168.1.60, 10.0.0.0/24)"),
                   style="Muted.TLabel").pack(anchor="w", pady=(10, 2))
         self.extra = tk.StringVar(value=", ".join(s for s in selected if s not in known_ips))
         self.e_extra = ttk.Entry(box, textvariable=self.extra, width=50)
         self.e_extra.pack(anchor="w", fill="x")
         btns = ttk.Frame(b)
         btns.pack(fill="x", pady=(20, 0))
-        ttk.Button(btns, text="Abbrechen", command=self.destroy).pack(side="right")
-        ttk.Button(btns, text="Speichern", style="Accent.TButton", command=self._ok).pack(side="right", padx=8)
+        ttk.Button(btns, text=_("Abbrechen"), command=self.destroy).pack(side="right")
+        ttk.Button(btns, text=_("Speichern"), style="Accent.TButton", command=self._ok).pack(side="right", padx=8)
         self._update()
         self.run()
 
@@ -89,8 +90,8 @@ class ClientPicker(Dialog):
             chosen = [ip for ip, v, _cb in self.vars if v.get()]
             chosen += [x.strip() for x in self.extra.get().replace(";", ",").split(",") if x.strip()]
             if not chosen:
-                messagebox.showerror("Kein Client gewählt",
-                                     "Bitte mindestens einen Client auswählen oder eintragen.", parent=self)
+                messagebox.showerror(_("Kein Client gewählt"),
+                                     _("Bitte mindestens einen Client auswählen oder eintragen."), parent=self)
                 return
             self.result = list(dict.fromkeys(chosen))
         self.destroy()
@@ -142,29 +143,31 @@ class ServerWindow:
         _f, self.subtitle, right = header(root, "server", "usbshare Server")
         self.state_lbl = ttk.Label(right, style="Section.TLabel")
         self.state_lbl.pack(side="left", padx=(0, 14))
-        ttk.Button(right, text="Nach Updates suchen", command=self.check_updates).pack(
+        ttk.Button(right, text=_("Nach Updates suchen"), command=self.check_updates).pack(
             side="left", padx=(0, 8))
         mb = ttk.Menubutton(right, text="⋯", width=3)
         mb.pack(side="left")
         m = tk.Menu(mb, tearoff=False)
         self.autostart = tk.BooleanVar(value=run_key_enabled(RUN_NAME))
         self.to_tray = tk.BooleanVar(value=self.prefs.get("close_to_tray", True))
-        m.add_command(label="Zugelassene Clients …", command=self.edit_allowed)
-        m.add_command(label="Konfigurationsdatei öffnen", command=self.open_config)
-        m.add_command(label="Nach Updates suchen …", command=self.check_updates)
+        m.add_command(label=_("Zugelassene Clients …"), command=self.edit_allowed)
+        m.add_command(label=_("Konfigurationsdatei öffnen"), command=self.open_config)
+        m.add_command(label=_("Nach Updates suchen …"), command=self.check_updates)
         m.add_separator()
-        m.add_checkbutton(label="Beim Anmelden im Infobereich starten", variable=self.autostart,
+        m.add_checkbutton(label=_("Beim Anmelden im Infobereich starten"), variable=self.autostart,
                           command=self._toggle_autostart,
                           state="normal" if IS_WIN and getattr(sys, "frozen", False) else "disabled")
-        m.add_checkbutton(label="Beim Schließen im Infobereich bleiben", variable=self.to_tray,
+        m.add_checkbutton(label=_("Beim Schließen im Infobereich bleiben"), variable=self.to_tray,
                           command=self._toggle_tray)
+        add_language_menu(m, self.restart)
         m.add_separator()
-        m.add_command(label=f"Über usbshare {__version__}", command=lambda: messagebox.showinfo(
-            "usbshare", f"usbshare Server {__version__}\n\nDieses Fenster steuert den usbshare-Dienst. "
-            "Der Dienst läuft auch weiter, wenn das Fenster geschlossen ist.\n\n"
-            f"© 2026 {__author__}\n{__url__}\nLizenz: GNU GPL v3 oder neuer – freie Software, "
-            "ohne Gewährleistung."))
-        m.add_command(label="Fenster beenden", command=self.quit)
+        m.add_command(label=_("Über usbshare {v}", v=__version__), command=lambda: messagebox.showinfo(
+            "usbshare", f"usbshare Server {__version__}\n\n"
+            + _("Dieses Fenster steuert den usbshare-Dienst. Der Dienst läuft auch weiter, wenn das "
+                "Fenster geschlossen ist.")
+            + f"\n\n© 2026 {__author__}\n{__url__}\n"
+            + _("Lizenz: GNU GPL v3 oder neuer – freie Software, ohne Gewährleistung.")))
+        m.add_command(label=_("Fenster beenden"), command=self.quit)
         mb["menu"] = m
 
         body = ttk.Frame(root, padding=(18, 10, 18, 16))
@@ -177,16 +180,16 @@ class ServerWindow:
         dev.grid(row=0, column=0, sticky="nsew")
         top = ttk.Frame(dev)
         top.pack(fill="x")
-        ttk.Label(top, text="USB-Geräte an diesem Rechner", style="Section.TLabel").pack(side="left")
-        ttk.Label(top, style="Muted.TLabel", text="Gerät auswählen, dann freigeben und Clients festlegen "
-                  "(Doppelklick)").pack(side="left", padx=10)
+        ttk.Label(top, text=_("USB-Geräte an diesem Rechner"), style="Section.TLabel").pack(side="left")
+        ttk.Label(top, style="Muted.TLabel", text=_("Gerät auswählen, dann freigeben und Clients "
+                                                     "festlegen (Doppelklick)")).pack(side="left", padx=10)
         holder = ttk.Frame(dev)
         holder.pack(fill="both", expand=True, pady=(10, 0))
         cols = ("shared", "device", "access", "state", "vidpid", "busid")
         self.tv = ttk.Treeview(holder, columns=cols, show="headings", selectmode="browse", height=7)
-        for col, text, w in (("shared", "Freigabe", 80), ("device", "Gerät", 210),
-                             ("access", "Zugriff für", 200), ("state", "Status", 230),
-                             ("vidpid", "VID:PID", 85), ("busid", "Bus-ID", 60)):
+        for col, text, w in (("shared", _("Freigabe"), 80), ("device", _("Gerät"), 210),
+                             ("access", _("Zugriff für"), 200), ("state", _("Status"), 230),
+                             ("vidpid", "VID:PID", 85), ("busid", _("Bus-ID"), 60)):
             self.tv.heading(col, text=text, anchor="center" if col == "shared" else "w")
             self.tv.column(col, width=w, anchor="center" if col == "shared" else "w",
                            stretch=col in ("device", "access", "state"))
@@ -203,37 +206,38 @@ class ServerWindow:
         b = ttk.Frame(dev)
         b.pack(fill="x", pady=(10, 0))
         self.share_var = tk.BooleanVar()
-        self.sw_share = ttk.Checkbutton(b, text="Freigegeben", style="Switch.TCheckbutton",
+        self.sw_share = ttk.Checkbutton(b, text=_("Freigegeben"), style="Switch.TCheckbutton",
                                         variable=self.share_var, command=self._switch_share)
         self.sw_share.pack(side="left")
-        self.b_assign = ttk.Button(b, text="Clients festlegen …", style="Accent.TButton", command=self.assign)
+        self.b_assign = ttk.Button(b, text=_("Clients festlegen …"), style="Accent.TButton", command=self.assign)
         self.b_assign.pack(side="left", padx=16)
-        self.b_kick = ttk.Button(b, text="Vom Client trennen", command=self.kick)
+        self.b_kick = ttk.Button(b, text=_("Vom Client trennen"), command=self.kick)
         self.b_kick.pack(side="left")
 
         cli = ttk.Frame(body, style="Card.TFrame", padding=14)
         cli.grid(row=1, column=0, sticky="nsew", pady=(12, 0))
         top = ttk.Frame(cli)
         top.pack(fill="x")
-        ttk.Label(top, text="Clients", style="Section.TLabel").pack(side="left")
+        ttk.Label(top, text=_("Clients"), style="Section.TLabel").pack(side="left")
         self.allowed_lbl = ttk.Label(top, style="Muted.TLabel")
         self.allowed_lbl.pack(side="left", padx=10)
-        ttk.Button(top, text="Zugelassene Clients …", command=self.edit_allowed).pack(side="right")
+        ttk.Button(top, text=_("Zugelassene Clients …"), command=self.edit_allowed).pack(side="right")
         holder = ttk.Frame(cli)
         holder.pack(fill="both", expand=True, pady=(10, 0))
         ccols = ("name", "ip", "allowed", "using", "seen")
         self.tc = ttk.Treeview(holder, columns=ccols, show="headings", selectmode="none", height=4)
-        for col, text, w in (("name", "Name", 160), ("ip", "IP-Adresse", 130), ("allowed", "Zugelassen", 100),
-                             ("using", "Nutzt", 300), ("seen", "Zuletzt gesehen", 130)):
+        for col, text, w in (("name", _("Name"), 160), ("ip", _("IP-Adresse"), 130),
+                             ("allowed", _("Zugelassen"), 100), ("using", _("Nutzt"), 300),
+                             ("seen", _("Zuletzt gesehen"), 130)):
             self.tc.heading(col, text=text, anchor="w")
             self.tc.column(col, width=w, stretch=col == "using")
         self.tc.tag_configure("denied", foreground=self.pal.err)
         self.tc.pack(fill="both", expand=True)
 
         self.tray = Tray("server", "usbshare Server", self.ui, [
-            ("usbshare Server öffnen", self.show, True),
+            (_("usbshare Server öffnen"), self.show, True),
             ("", None, False),
-            ("Fenster beenden (Dienst läuft weiter)", self.quit, False)])
+            (_("Fenster beenden (Dienst läuft weiter)"), self.quit, False)])
         root.protocol("WM_DELETE_WINDOW", self._on_close)
         threading.Thread(target=self._poll, daemon=True).start()
         self._tick()
@@ -264,7 +268,7 @@ class ServerWindow:
                 if r.get("status"):
                     self.status = r["status"]
             if not r.get("ok"):
-                self.ui.call(lambda: messagebox.showerror("usbshare Server", r.get("error", "Fehler")))
+                self.ui.call(lambda: messagebox.showerror("usbshare Server", r.get("error", _("Fehler"))))
             self._wake.set()
         threading.Thread(target=work, daemon=True).start()
 
@@ -279,37 +283,38 @@ class ServerWindow:
         with self._lock:
             st, err = self.status, self.error
         if st is None:
-            self.state_lbl.configure(text="●  Dienst läuft nicht" if err else "…", style="Err.TLabel")
-            self.subtitle.configure(text=(f"Keine Verbindung zum usbshare-Dienst (Port {self.port}). "
-                                          "Ist der Server installiert und gestartet?") if err else "Verbinde …")
+            self.state_lbl.configure(text="●  " + _("Dienst läuft nicht") if err else "…", style="Err.TLabel")
+            self.subtitle.configure(text=_("Keine Verbindung zum usbshare-Dienst (Port {port}). Ist der "
+                                           "Server installiert und gestartet?", port=self.port)
+                                    if err else _("Verbinde …"))
             rows, crows = [], []
-            self.tray.update("warn", "usbshare Server – Dienst läuft nicht")
+            self.tray.update("warn", "usbshare Server – " + _("Dienst läuft nicht"))
         else:
-            self.state_lbl.configure(text="●  Server läuft", style="Ok.TLabel")
-            note = f"{st['hostname']}  ·  Port {st['port']}"
+            self.state_lbl.configure(text="●  " + _("Server läuft"), style="Ok.TLabel")
+            note = f"{st['hostname']}  ·  " + _("Port {port}", port=st["port"])
             if not st.get("config_path"):
-                note += "  ·  ohne Konfigurationsdatei (Änderungen nur bis zum Neustart)"
+                note += "  ·  " + _("ohne Konfigurationsdatei (Änderungen nur bis zum Neustart)")
             elif not st.get("config_writable"):
-                note += "  ·  Konfiguration nicht beschreibbar!"
+                note += "  ·  " + _("Konfiguration nicht beschreibbar!")
             if not st.get("discovery"):
-                note += "  ·  Serversuche aus"
+                note += "  ·  " + _("Serversuche aus")
             self.subtitle.configure(text=note)
             names = {c["ip"]: c.get("name", "") for c in st["clients"]}
             rows = []
             used = {}
             for d in st["devices"]:
                 owners = [c[:-3] if c.endswith("/32") else c for c in d["assigned_to"]]
-                access = "Alle Clients" if not owners else \
+                access = _("Alle Clients") if not owners else \
                     ", ".join(_client_text(c, names.get(c, "")) for c in owners)
                 if not d["shared"]:
-                    state, tag = "Nicht freigegeben", "off"
+                    state, tag = _("Nicht freigegeben"), "off"
                 elif d["used_by"]:
-                    state, tag = "●  Verbunden mit " + (d.get("used_by_name") or d["used_by"]), "used"
+                    state, tag = "●  " + _("Verbunden mit {client}", client=d.get("used_by_name") or d["used_by"]), "used"
                     used[d["busid"]] = (device_label(d), d.get("used_by_name") or d["used_by"])
                 elif d.get("no_driver"):
-                    state, tag = "⚠  Kein Treiber (UsbDk/WinUSB)", "nodrv"
+                    state, tag = "⚠  " + _("Kein Treiber (UsbDk/WinUSB)"), "nodrv"
                 else:
-                    state, tag = "○  Frei", ""
+                    state, tag = "○  " + _("Frei"), ""
                 rows.append((d["busid"], ("☑" if d["shared"] else "☐", device_label(d),
                                           access if d["shared"] else "–", state,
                                           d["vidpid"], d["busid"]), (tag,)))
@@ -319,16 +324,17 @@ class ServerWindow:
             crows = []
             for c in st["clients"]:
                 ago = int(now - c["last_seen"])
-                seen = "gerade eben" if ago < 60 else f"vor {ago // 60} min" if ago < 3600 else \
-                    time.strftime("%d.%m. %H:%M", time.localtime(c["last_seen"]))
-                crows.append((c["ip"], (c.get("name") or "–", c["ip"], "ja" if c["allowed"] else "nein",
+                seen = _("gerade eben") if ago < 60 else _("vor {n} min", n=ago // 60) if ago < 3600 else \
+                    time.strftime(_("%d.%m. %H:%M"), time.localtime(c["last_seen"]))
+                crows.append((c["ip"], (c.get("name") or "–", c["ip"], _("ja") if c["allowed"] else _("nein"),
                                         ", ".join(dev_names.get(b, b) for b in c["using"]), seen),
                                ("" if c["allowed"] else "denied",)))
             allowed = st.get("allow_clients") or []
-            self.allowed_lbl.configure(text="alle Clients im Netzwerk zugelassen" if not allowed
-                                       else "zugelassen: " + ", ".join(allowed))
+            self.allowed_lbl.configure(text=_("alle Clients im Netzwerk zugelassen") if not allowed
+                                       else _("zugelassen: {clients}", clients=", ".join(allowed)))
             n = len(used)
-            self.tray.update("ok" if n else "", f"usbshare Server – {n} Gerät{'e' if n != 1 else ''} verbunden")
+            self.tray.update("ok" if n else "", "usbshare Server – " + (
+                _("1 Gerät verbunden") if n == 1 else _("{n} Geräte verbunden", n=n)))
         if rows != self._dev_rows:
             sel = self.tv.selection()
             self.tv.delete(*self.tv.get_children())
@@ -350,10 +356,10 @@ class ServerWindow:
             return
         for busid, (dev, who) in used.items():
             if prev.get(busid) != (dev, who):
-                self.tray.notify("Gerät verbunden", f"{who} nutzt jetzt {dev}")
+                self.tray.notify(_("Gerät verbunden"), _("{client} nutzt jetzt {device}", client=who, device=dev))
         for busid, (dev, who) in prev.items():
             if busid not in used:
-                self.tray.notify("Gerät getrennt", f"{dev} ist wieder frei")
+                self.tray.notify(_("Gerät getrennt"), _("{device} ist wieder frei", device=dev))
 
     # -- actions ----------------------------------------------------------------------
     def _selected(self) -> Optional[dict]:
@@ -386,8 +392,9 @@ class ServerWindow:
         if not d:
             return
         if d["shared"] and d["used_by"] and not messagebox.askyesno(
-                "Gerät wird benutzt", f"{device_label(d)} wird gerade von {d['used_by']} benutzt.\n"
-                "Nicht mehr freigeben und dort trennen?"):
+                _("Gerät wird benutzt"), _("{device} wird gerade von {client} benutzt.\n"
+                                           "Nicht mehr freigeben und dort trennen?",
+                                           device=device_label(d), client=d["used_by"])):
             self.share_var.set(True)
             return
         self._do({"action": "share", "busid": d["busid"], "shared": not d["shared"]})
@@ -399,17 +406,19 @@ class ServerWindow:
         with self._lock:
             known = list(self.status["clients"]) if self.status else []
         current = [c[:-3] if c.endswith("/32") else c for c in d["assigned_to"]]
-        dlg = ClientPicker(self.root, "Clients festlegen",
-                           f"Welche Clients dürfen „{device_label(d)}“ ({d['vidpid']}) benutzen?",
-                           "Alle zugelassenen Clients", current, known)
+        dlg = ClientPicker(self.root, _("Clients festlegen"),
+                           _("Welche Clients dürfen „{device}“ ({vidpid}) benutzen?",
+                             device=device_label(d), vidpid=d["vidpid"]),
+                           _("Alle zugelassenen Clients"), current, known)
         if dlg.result is not None:
             self._do({"action": "assign", "busid": d["busid"], "clients": dlg.result})
 
     def kick(self):
         d = self._selected()
         if d and d["used_by"] and messagebox.askyesno(
-                "Vom Client trennen", f"{device_label(d)} von {d['used_by']} trennen?\n"
-                "Für den Client sieht das aus, als würde das Gerät abgesteckt."):
+                _("Vom Client trennen"), _("{device} von {client} trennen?\nFür den Client sieht das "
+                                           "aus, als würde das Gerät abgesteckt.",
+                                           device=device_label(d), client=d["used_by"])):
             self._do({"action": "release", "busid": d["busid"]})
 
     def edit_allowed(self):
@@ -418,10 +427,10 @@ class ServerWindow:
         if not st:
             return
         current = [c[:-3] if c.endswith("/32") else c for c in st.get("allow_clients") or []]
-        dlg = ClientPicker(self.root, "Zugelassene Clients",
-                           "Welche Rechner/VMs dürfen sich überhaupt mit diesem Server verbinden? "
-                           "Nicht zugelassene Clients finden den Server auch bei der Suche nicht.",
-                           "Alle Clients im Netzwerk", current, st["clients"])
+        dlg = ClientPicker(self.root, _("Zugelassene Clients"),
+                           _("Welche Rechner/VMs dürfen sich überhaupt mit diesem Server verbinden? "
+                             "Nicht zugelassene Clients finden den Server auch bei der Suche nicht."),
+                           _("Alle Clients im Netzwerk"), current, st["clients"])
         if dlg.result is not None:
             self._do({"action": "allow_clients", "clients": dlg.result})
 
@@ -429,7 +438,7 @@ class ServerWindow:
         with self._lock:
             path = (self.status or {}).get("config_path")
         if not path:
-            messagebox.showinfo("Konfiguration", "Der Server läuft ohne Konfigurationsdatei.")
+            messagebox.showinfo(_("Konfiguration"), _("Der Server läuft ohne Konfigurationsdatei."))
             return
         try:
             if IS_WIN:
@@ -437,7 +446,7 @@ class ServerWindow:
             else:
                 subprocess.Popen(["xdg-open", path])
         except OSError as e:
-            messagebox.showerror("Konfiguration", f"{path}\n\n{e}")
+            messagebox.showerror(_("Konfiguration"), f"{path}\n\n{e}")
 
     def check_updates(self):
         from .update_ui import UpdateDialog
@@ -445,20 +454,32 @@ class ServerWindow:
 
     def _restart_after_update(self):
         """The service was updated and restarted; reopen this window with the new program."""
+        if not self._relaunch("--after-update"):
+            messagebox.showinfo("usbshare Server", _("Update installiert."))
+
+    def restart(self):
+        if not self._relaunch("--restarted"):
+            self.tray.stop()
+            restart_program(["--restarted"])
+            self.root.destroy()
+
+    def _relaunch(self, flag: str) -> bool:
+        """Start the window again from the installed program; False when run from source."""
         from .updater import clean_environment, frozen_executable
         exe = frozen_executable()
+        if not exe:
+            return False
         self.tray.stop()
-        if exe and IS_WIN:
+        if IS_WIN:
             if getattr(self, "inst", None):
                 self.inst.close()
-            subprocess.Popen([exe, "--port", str(self.port), "--after-update"], close_fds=True,
+            subprocess.Popen([exe, "--port", str(self.port), flag], close_fds=True,
                              creationflags=0x00000008 | 0x00000200, env=clean_environment())
             self.root.destroy()
-            return
-        if exe:
-            self.root.destroy()
-            os.execve(exe, [exe, "gui", "--port", str(self.port)], clean_environment())
-        messagebox.showinfo("usbshare Server", "Update installiert.")
+            return True
+        self.root.destroy()          # Linux: `usbshare gui` replaces itself
+        os.execve(exe, [exe, "gui", "--port", str(self.port)], clean_environment())
+        return True
 
     # -- window / tray -----------------------------------------------------------------
     def show(self):
@@ -476,15 +497,15 @@ class ServerWindow:
             self.root.withdraw()
             if not self._told_tray:
                 self._told_tray = True
-                self.tray.notify("usbshare Server", "Das Fenster ist im Infobereich. Der Server-Dienst "
-                                 "läuft unabhängig davon immer weiter.")
+                self.tray.notify("usbshare Server", _("Das Fenster ist im Infobereich. Der Server-Dienst "
+                                                      "läuft unabhängig davon immer weiter."))
             return
         self.quit()
 
     def _toggle_autostart(self):
         cmd = f'"{sys.executable}" --minimized' if self.autostart.get() else None
         if not set_run_key(RUN_NAME, cmd):
-            messagebox.showerror("Autostart", "Autostart konnte nicht geändert werden.")
+            messagebox.showerror(_("Autostart"), _("Autostart konnte nicht geändert werden."))
             self.autostart.set(run_key_enabled(RUN_NAME))
 
     def _toggle_tray(self):
@@ -498,6 +519,7 @@ def main(argv=None) -> int:
     p.add_argument("--port", type=int, default=P.DEFAULT_PORT)
     p.add_argument("--minimized", action="store_true")
     p.add_argument("--after-update", action="store_true", help=argparse.SUPPRESS)
+    p.add_argument("--restarted", action="store_true", help=argparse.SUPPRESS)
     a = p.parse_args(sys.argv[1:] if argv is None else argv)
     if IS_WIN:
         try:
@@ -505,7 +527,7 @@ def main(argv=None) -> int:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except Exception:
             pass
-    inst = SingleInstance(INSTANCE_PORT, wait=15.0 if a.after_update else 0.0)
+    inst = SingleInstance(INSTANCE_PORT, wait=15.0 if a.after_update or a.restarted else 0.0)
     if not inst.first:
         inst.notify_running()
         return 0

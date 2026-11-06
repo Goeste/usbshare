@@ -26,7 +26,7 @@ def remote_devlist(host: str, port: int = P.DEFAULT_PORT, timeout: float = 5.0) 
             raise ConnectionError(f"bad devlist reply code=0x{code:04x} status={status}")
         n = int.from_bytes(recv_exact(s, 4), "big")
         devs = []
-        for _ in range(n):
+        for _i in range(n):
             info = DeviceInfo.unpack(recv_exact(s, P.DEVICE_STRUCT.size))
             raw = recv_exact(s, 4 * info._num_interfaces)  # type: ignore[attr-defined]
             info.interfaces = [P.INTERFACE_STRUCT.unpack_from(raw, i * 4)
@@ -54,7 +54,7 @@ def find_usbip_tool() -> Optional[str]:
 def parse_server(spec: str, default_port: int = P.DEFAULT_PORT) -> Tuple[str, int]:
     """'host', 'host:port', '[v6addr]:port' -> (host, port)"""
     if spec.startswith("["):
-        host, _, rest = spec[1:].partition("]")
+        host, _sep, rest = spec[1:].partition("]")
         return host, int(rest[1:]) if rest.startswith(":") else default_port
     if spec.count(":") == 1:
         host, port = spec.split(":")

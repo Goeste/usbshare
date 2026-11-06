@@ -33,6 +33,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
 from usbshare.config import ServerConfig  # noqa: E402
+from usbshare.i18n import set_language  # noqa: E402
 
 
 def _copy(src, dst, mode=None):
@@ -72,6 +73,7 @@ def main():
             return None
         return p
 
+    set_language("en")                # the shipped config template has English comments
     config = ServerConfig().render()
 
     def package(folder_name, readme):

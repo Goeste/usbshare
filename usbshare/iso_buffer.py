@@ -25,6 +25,7 @@ from typing import Callable, Deque, Dict, List, Optional, Tuple
 import usb1
 
 from . import protocol as P
+from .i18n import _
 from .protocol import IsoPacket, SubmitCmd, UrbResult
 
 log = logging.getLogger("usbshare.iso")
@@ -102,7 +103,7 @@ class IsoOutStream:
             return
         self._finish(finished)
         if start:
-            for _ in range(self.depth):
+            for _i in range(self.depth):
                 if not self._submit_one():
                     break
 
@@ -124,7 +125,7 @@ class IsoOutStream:
                 return False
             packets: List[bytes] = []
             silent = 0
-            for _ in range(self.ppt):
+            for _i in range(self.ppt):
                 if self._fifo:
                     data, owner = self._fifo.popleft()
                     if owner is not None:
@@ -229,14 +230,15 @@ class IsoOutStream:
     _packet_ms = 1.0
 
     def summary(self) -> str:
-        s = (f"Puffer {self.buffer_ms:.0f} ms, {self.urbs} URBs, mit Stille aufgefüllt "
-             f"{self.underruns}× ({self.silence_packets} Pakete)")
+        s = _("Puffer {ms} ms, {urbs} URBs, mit Stille aufgefüllt {n}× ({packets} Pakete)",
+              ms=f"{self.buffer_ms:.0f}", urbs=self.urbs, n=self.underruns,
+              packets=self.silence_packets)
         if self.dropped_packets:
-            s += f", verworfen {self.dropped_packets} Pakete"
+            s += ", " + _("verworfen {n} Pakete", n=self.dropped_packets)
         if self.restarts:
-            s += f", vom System abgebrochen und neu gestartet {self.restarts}×"
+            s += ", " + _("vom System abgebrochen und neu gestartet {n}×", n=self.restarts)
         if self.device_errors:
-            s += ", Gerätefehler " + ", ".join(f"{k}: {n}" for k, n in self.device_errors.items())
+            s += ", " + _("Gerätefehler") + " " + ", ".join(f"{k}: {n}" for k, n in self.device_errors.items())
         return s
 
 

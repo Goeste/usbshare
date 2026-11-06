@@ -5,6 +5,11 @@ Alternative zu VirtualHere. Der Server läuft auf dem Rechner, an dem die Gerät
 (Linux oder Windows, experimentell macOS), der Client auf dem Windows-Rechner bzw. der VM,
 die die Geräte nutzen soll.
 
+> **English:** usbshare passes USB devices over the network to a VM or another PC – a free
+> alternative to VirtualHere. The programs are available in **English and German**
+> (⋯ → Language). This page is in German; see [Translating](TRANSLATING.md) to help with
+> other languages.
+
 > [!WARNING]
 > **Mit KI erstellt:** Der Code dieses Projekts wurde von **Claude** (KI-Assistent von
 > Anthropic) im Auftrag und nach den Vorgaben von Goeste geschrieben. Er wurde getestet,
@@ -31,6 +36,8 @@ die die Geräte nutzen soll.
 - Control-, Bulk-, Interrupt- und isochrone Transfers (mit Audio-Puffer für Headsets);
   USB-Reset bei der Übergabe
 - **Updates per Klick** für Client, Linux- und Windows-Server
+- **Deutsch und Englisch** (Menü ⋯ → Sprache), weitere Sprachen leicht ergänzbar –
+  [mitübersetzen](TRANSLATING.md)
 - Schlank: einzelne Programmdateien ohne Installation von Python (Windows-Server 9,5 MB,
   Client 12 MB, Linux-Server 25 MB)
 
@@ -131,6 +138,18 @@ Updates werden nur auf Knopfdruck gesucht (Abfrage bei GitHub, keine automatisch
 Verbindung). Jedes Release enthält `SHA256SUMS.txt`; ein Update wird nur installiert, wenn
 die Prüfsumme stimmt.
 
+## Sprache / Language
+
+Client und Server-Fenster folgen der Sprache von Windows bzw. Linux; umstellen lässt sie
+sich im Menü **⋯ → Sprache** (danach startet das Programm neu). Die Kommandozeile und der
+Server-Dienst richten sich nach der Systemsprache; erzwingen lässt sich eine Sprache mit
+der Umgebungsvariable `USBSHARE_LANG=en` bzw. `de` (z. B. in der systemd-Unit:
+`Environment=USBSHARE_LANG=en`). Sprachen ohne Übersetzung zeigen Englisch.
+
+**Mithelfen:** Die Übersetzungen sind gettext-Dateien (`usbshare/locales/*.po`) und lassen
+sich z. B. mit Poedit bearbeiten. Eine neue Sprache anlegen:
+`python tools/i18n.py new fr Français` – Details in [TRANSLATING.md](TRANSLATING.md).
+
 ## Aus dem Quellcode starten und bauen
 
 ```bash
@@ -170,7 +189,9 @@ Release `v<version>` mit dem Changelog-Abschnitt. Alternativ einen Tag `v<versio
 | `usbshare/driver.py` | usbip-win2 finden, installieren, aktualisieren |
 | `usbshare/server_gui.py` | Server-Fenster |
 | `usbshare/updater.py`, `update_ui.py` | Updates (GitHub-Releases, Prüfsummen) |
-| `usbshare/ui_common.py`, `icons.py`, `assets/` | Design, Infobereich, Symbole |
+| `usbshare/ui_common.py`, `icons.py`, `assets/` | Design, Infobereich, Symbole, Sprachmenü |
+| `usbshare/i18n.py`, `locales/` | Übersetzungen (gettext `.po`) |
+| `tools/i18n.py` | Texte einsammeln, Übersetzungen prüfen, neue Sprache anlegen |
 | `packaging/` | Installationsskripte und Anleitungen der Pakete |
 | `contrib/` | Linux-Client-Skript (Auto-Attach), macOS-launchd |
 | `tests/` | Tests (Protokoll, Server, Client-Logik, libusb-Puffer) |

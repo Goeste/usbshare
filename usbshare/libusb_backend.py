@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Tuple
 import usb1
 
 from . import protocol as P
+from .i18n import _
 from .backend import Backend, BackendError, CompletionFn, DeviceSession
 from .iso_buffer import IsoOutStream, make_stream
 from .protocol import DeviceInfo, IsoPacket, SubmitCmd, UrbResult
@@ -43,9 +44,9 @@ _STATUS = {
 # while -EPROTO in nearly every packet makes it stop the stream (microphone goes silent).
 _ISO_PKT_STATUS = dict(_STATUS)
 _ISO_PKT_STATUS[usb1.TRANSFER_ERROR] = -P.EXDEV
-_LIBUSB_NAMES = {usb1.TRANSFER_ERROR: "nicht übertragen", usb1.TRANSFER_OVERFLOW: "zu lang",
+_LIBUSB_NAMES = {usb1.TRANSFER_ERROR: _("nicht übertragen"), usb1.TRANSFER_OVERFLOW: _("zu lang"),
                  usb1.TRANSFER_STALL: "stall", usb1.TRANSFER_TIMED_OUT: "timeout",
-                 usb1.TRANSFER_CANCELLED: "abgebrochen", usb1.TRANSFER_NO_DEVICE: "Gerät weg"}
+                 usb1.TRANSFER_CANCELLED: _("abgebrochen"), usb1.TRANSFER_NO_DEVICE: _("Gerät weg")}
 CONTROL_LOG_LIMIT = 300
 RETRIES = 3          # transparent retries of transient errors on interrupt/bulk endpoints
 RETRY_PAUSE = 0.004  # pause between retries of interrupt IN (keys, buttons)
@@ -423,8 +424,8 @@ class LibusbSession(DeviceSession):
                 n = self._retries[cmd.seqnum] = self._retries.get(cmd.seqnum, 0) + 1
                 self._retry_count[cmd.endpoint_address] += 1
                 if self._retry_count[cmd.endpoint_address] in (1, 10, 100, 1000, 10000):
-                    log.info("%s: Übertragungsfehler auf Endpoint 0x%02x – wird wiederholt "
-                             "(bisher %d×)", self.busid, cmd.endpoint_address,
+                    log.info(_("%s: Übertragungsfehler auf Endpoint 0x%02x – wird wiederholt "
+                               "(bisher %d×)"), self.busid, cmd.endpoint_address,
                              self._retry_count[cmd.endpoint_address])
                 t.doom()
                 # short, fixed pause (≈ polling interval of keys/buttons): a growing back-off
@@ -479,10 +480,10 @@ class LibusbSession(DeviceSession):
             if rt & 0x60 == 0x20:                     # class requests (audio: rate, volume, mute)
                 what = {0x01: "SET_CUR", 0x81: "GET_CUR", 0x82: "GET_MIN", 0x83: "GET_MAX",
                         0x84: "GET_RES"}.get(req, f"req 0x{req:02x}")
-                target = {1: "Interface/Unit", 2: "Endpoint"}.get(rt & 0x1F, "Gerät")
-                self._log_ctrl(f"Klassen-Anfrage {what} an {target} wIndex=0x{idx:04x} "
-                               f"wValue=0x{val:04x} → " + ("ok" if res.status == 0 else
-                                                           f"Fehler {res.status}"))
+                target = {1: "Interface/Unit", 2: "Endpoint"}.get(rt & 0x1F, _("Gerät"))
+                self._log_ctrl(_("Klassen-Anfrage {request} an {target}", request=what, target=target)
+                               + f" wIndex=0x{idx:04x} wValue=0x{val:04x} → "
+                               + ("ok" if res.status == 0 else _("Fehler {code}", code=res.status)))
         if res.status == 0 and cmd.direction == P.USBIP_DIR_IN and res.actual_length and cmd.ep:
             if addr not in self._data_seen:
                 self._data_seen.add(addr)
@@ -510,7 +511,7 @@ class LibusbSession(DeviceSession):
         now = time.monotonic()
         idle_since = self._iso_idle.pop(addr, None)
         if idle_since is not None:
-            log.info("%s: Endpoint 0x%02x: Client sendet wieder Audio/Video-Daten (Pause %.1f s)",
+            log.info(_("%s: Endpoint 0x%02x: Client sendet wieder Audio/Video-Daten (Pause %.1f s)"),
                      self.busid, addr, now - idle_since)
         self._iso_last_urb[addr] = now
 
@@ -520,8 +521,8 @@ class LibusbSession(DeviceSession):
             for addr, last in list(self._iso_last_urb.items()):
                 if addr not in self._iso_idle and now - last > 1.0:
                     self._iso_idle[addr] = last
-                    log.info("%s: Endpoint 0x%02x: seit %.1f s keine Audio/Video-Daten mehr vom "
-                             "Client (Schnittstelle ist noch aktiv)", self.busid, addr, now - last)
+                    log.info(_("%s: Endpoint 0x%02x: seit %.1f s keine Audio/Video-Daten mehr vom "
+                               "Client (Schnittstelle ist noch aktiv)"), self.busid, addr, now - last)
 
     def _forget_iso_activity(self, interface: Optional[int]) -> None:
         for addr in list(self._iso_last_urb):
@@ -537,7 +538,7 @@ class LibusbSession(DeviceSession):
                 st = make_stream(self.handle, addr, cmd, hs, self.audio_buffer_ms,
                                  f"{self.busid} 0x{addr:02x}")
                 self._streams[addr] = st
-                log.info("%s: Audio-Puffer für Endpoint 0x%02x aktiv (%.0f ms)", self.busid, addr,
+                log.info(_("%s: Audio-Puffer für Endpoint 0x%02x aktiv (%.0f ms)"), self.busid, addr,
                          st.buffer_ms)
         return st
 
@@ -550,7 +551,7 @@ class LibusbSession(DeviceSession):
         for a, st in victims:
             st.stop()
             self._stream_stats.append(f"0x{a:02x}: {st.summary()}")
-            log.info("%s: Audio-Puffer 0x%02x beendet – %s", self.busid, a, st.summary())
+            log.info(_("%s: Audio-Puffer 0x%02x beendet – %s"), self.busid, a, st.summary())
 
     def _log_ctrl(self, text: str) -> None:
         if self._ctrl_logged < CONTROL_LOG_LIMIT:
@@ -579,31 +580,33 @@ class LibusbSession(DeviceSession):
     def iso_summary(self) -> str:
         parts = []
         for a in sorted(self._iso_count):
-            parts.append(f"0x{a:02x}: {self._iso_count[a]} URBs, leergelaufen {self._iso_dry[a]}×"
+            parts.append(f"0x{a:02x}: " + _("{urbs} URBs, leergelaufen {n}×", urbs=self._iso_count[a],
+                                                       n=self._iso_dry[a])
                          + (f" (max. {self._iso_maxgap[a]:.0f} ms)" if self._iso_dry[a] else "")
-                         + (f", Paketfehler {self._iso_pkt_err[a]} ("
+                         + (", " + _("Paketfehler {n}", n=self._iso_pkt_err[a]) + " ("
                             + ", ".join(f"{_LIBUSB_NAMES.get(k, k)} {n}" for (ea, k), n
                                         in sorted(self._iso_pkt_kind.items()) if ea == a) + ")"
                             if self._iso_pkt_err[a] else "")
-                         + (f", nur Stille {self._iso_silent[a]}×" if self._iso_silent[a] else ""))
+                         + (", " + _("nur Stille {n}×", n=self._iso_silent[a]) if self._iso_silent[a] else ""))
         return "; ".join(parts)
 
     def summary(self) -> str:
-        eps = ", ".join(f"0x{a:02x}" for a in sorted(self._data_seen)) or "keine"
+        eps = ", ".join(f"0x{a:02x}" for a in sorted(self._data_seen)) or _("keine")
         errs = ", ".join(f"0x{a:02x}:{_ERRNAME.get(-s, s)}x{n}"
-                         for (a, s), n in sorted(self._errors.items())) or "keine"
+                         for (a, s), n in sorted(self._errors.items())) or _("keine")
         iso = self.iso_summary()
         buf = "; ".join(self._stream_stats)
         if self._retry_count:
-            errs += ", wiederholt " + ", ".join(f"0x{a:02x}: {n}×" for a, n in
+            errs += ", " + _("wiederholt") + " " + ", ".join(f"0x{a:02x}: {n}×" for a, n in
                                                sorted(self._retry_count.items()))
-        return (f"{self._urbs} URBs, Daten von Endpoints: {eps}, Fehler: {errs}"
+        return (_("{urbs} URBs, Daten von Endpoints: {endpoints}, Fehler: {errors}", urbs=self._urbs,
+                  endpoints=eps, errors=errs)
                 + (f", Audio/Video: {iso}" if iso else "")
-                + (f", Audio-Puffer: {buf}" if buf else ""))
+                + (", " + _("Audio-Puffer: {info}", info=buf) if buf else ""))
 
     def _special_control(self, cmd: SubmitCmd, done: CompletionFn) -> bool:
         """Requests that must go through the OS API instead of the wire (like usbip-host)."""
-        rt, req, val, idx, _ = struct.unpack("<BBHHH", cmd.setup)
+        rt, req, val, idx, _len = struct.unpack("<BBHHH", cmd.setup)
         try:
             if rt == 0x00 and req == 0x09:            # SET_CONFIGURATION
                 if val != self.cfg:
@@ -619,7 +622,7 @@ class LibusbSession(DeviceSession):
                 try:
                     self.handle.setInterfaceAltSetting(idx, val)
                 finally:
-                    self._log_ctrl(f"SET_INTERFACE Interface {idx} → Alternative {val}")
+                    self._log_ctrl(_("SET_INTERFACE Interface {iface} → Alternative {alt}", iface=idx, alt=val))
             elif rt == 0x02 and req == 0x01 and val == 0:  # CLEAR_FEATURE(ENDPOINT_HALT)
                 ep = idx & 0xFF
                 if self._epmap.get(ep) == XFER_ISO:
@@ -629,8 +632,8 @@ class LibusbSession(DeviceSession):
                     # sends it to the device either – acknowledge and do nothing.
                     self._iso_clear_halt_ignored += 1
                     if self._iso_clear_halt_ignored == 1:
-                        log.info("%s: CLEAR_HALT für Audio/Video-Endpoint 0x%02x ignoriert "
-                                 "(bei isochronen Endpoints wirkungslos)", self.busid, ep)
+                        log.info(_("%s: CLEAR_HALT für Audio/Video-Endpoint 0x%02x ignoriert "
+                                   "(bei isochronen Endpoints wirkungslos)"), self.busid, ep)
                 else:
                     self.handle.clearHalt(ep)
             elif rt == 0x00 and req == 0x05:          # SET_ADDRESS: host already did this

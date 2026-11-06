@@ -1,0 +1,1530 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: usbshare 0.8.0\n"
+"Report-Msgid-Bugs-To: https://github.com/Goeste/usbshare/issues\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+"X-Language-Name: English\n"
+"X-Source-Language: de\n"
+
+#: usbshare/cli.py:108
+#. Platzhalter / placeholders: {host}, {port}, {v}
+msgid "usbshare {v} – Server läuft auf {host}:{port}"
+msgstr "usbshare {v} – server running on {host}:{port}"
+
+#: usbshare/cli.py:110
+msgid "Freigegebene Geräte:"
+msgstr "Shared devices:"
+
+#: usbshare/cli.py:113
+#. Platzhalter / placeholders: {clients}, {device}
+msgid "Zuweisung: {device} -> nur {clients}"
+msgstr "Assignment: {device} -> only {clients}"
+
+#: usbshare/cli.py:116
+msgid ""
+"Hinweis: ohne --config werden Änderungen aus dem Server-Fenster nicht gespeichert."
+msgstr ""
+"Note: without --config, changes made in the server window are not saved."
+
+#: usbshare/cli.py:138
+msgid "frei"
+msgstr "available"
+
+#: usbshare/cli.py:138
+#. Platzhalter / placeholders: {used_by}
+msgid "belegt von {used_by}"
+msgstr "in use by {used_by}"
+
+#: usbshare/cli.py:139
+#. Platzhalter / placeholders: {assigned}
+msgid "reserviert für {assigned}"
+msgstr "reserved for {assigned}"
+
+#: usbshare/cli.py:139
+msgid "kein Treiber"
+msgstr "no driver"
+
+#: usbshare/cli.py:161
+#. Platzhalter / placeholders: {busid}
+msgid "{busid} freigegeben."
+msgstr "{busid} released."
+
+#: usbshare/cli.py:162
+#. Platzhalter / placeholders: {busid}
+msgid "{busid} ist nicht belegt."
+msgstr "{busid} is not in use."
+
+#: usbshare/cli.py:163
+msgid ""
+"Nicht erlaubt: nur der Client, der das Gerät nutzt, oder der Server-Rechner selbst darf freigeben."
+msgstr ""
+"Not allowed: only the client using the device, or the server machine itself, may release it."
+
+#: usbshare/cli.py:164
+#. Platzhalter / placeholders: {status}
+msgid "Fehler (Status {status})"
+msgstr "Error (status {status})"
+
+#: usbshare/cli.py:179
+msgid ""
+"Das Server-Fenster ist nicht enthalten (usbshare-server-gui.exe fehlt)."
+msgstr ""
+"The server window is not included (usbshare-server-gui.exe is missing)."
+
+#: usbshare/cli.py:221 usbshare/cli.py:330
+msgid ""
+"Die neue Version startet auf diesem System nicht – Update abgebrochen, die bisherige Version bleibt."
+msgstr ""
+"The new version does not start on this system – update cancelled, the current version stays."
+
+#: usbshare/cli.py:249 usbshare/update_ui.py:46
+#. Platzhalter / placeholders: {error}
+msgid "Programmdatei konnte nicht ersetzt werden: {error}"
+msgstr "Could not replace the program file: {error}"
+
+#: usbshare/cli.py:25 usbshare/cli.py:147
+msgid "(keine Geräte)"
+msgstr "(no devices)"
+
+#: usbshare/cli.py:253 usbshare/cli.py:334
+#. Platzhalter / placeholders: {path}, {v}
+msgid "{path} aktualisiert auf {v}."
+msgstr "{path} updated to {v}."
+
+#: usbshare/cli.py:256 usbshare/cli.py:351
+msgid ""
+"Dienst usbshare neu gestartet. Verbundene Geräte werden kurz getrennt."
+msgstr ""
+"usbshare service restarted. Connected devices are disconnected briefly."
+
+#: usbshare/cli.py:257 usbshare/cli.py:352
+msgid "Fertig."
+msgstr "Done."
+
+#: usbshare/cli.py:269
+#. Platzhalter / placeholders: {v}
+msgid "Installiert: usbshare {v}"
+msgstr "Installed: usbshare {v}"
+
+#: usbshare/cli.py:273 usbshare/cli.py:322
+#. Platzhalter / placeholders: {error}
+msgid "Fehler: {error}"
+msgstr "Error: {error}"
+
+#: usbshare/cli.py:275
+#. Platzhalter / placeholders: {v}
+msgid "Neueste Version: {v}"
+msgstr "Latest version: {v}"
+
+#: usbshare/cli.py:277
+msgid "usbshare ist aktuell."
+msgstr "usbshare is up to date."
+
+#: usbshare/cli.py:28 usbshare/cli.py:149
+msgid "BESCHREIBUNG"
+msgstr "DESCRIPTION"
+
+#: usbshare/cli.py:283
+#. Platzhalter / placeholders: {command}, {v}
+msgid "Update verfügbar: {v} – installieren mit: {command}"
+msgstr "Update available: {v} – install with: {command}"
+
+#: usbshare/cli.py:284
+msgid "usbshare update (als Administrator)"
+msgstr "usbshare update (as administrator)"
+
+#: usbshare/cli.py:288
+msgid ""
+"Diese usbshare-Version läuft aus dem Quellcode – bitte mit git aktualisieren."
+msgstr "This usbshare version runs from source – please update with git."
+
+#: usbshare/cli.py:292
+msgid ""
+"Für das Update werden Administratorrechte gebraucht (Eingabeaufforderung „Als Administrator ausführen“)."
+msgstr ""
+"The update needs administrator rights (Command Prompt “Run as administrator”)."
+
+#: usbshare/cli.py:296
+msgid "Für das Update werden Root-Rechte gebraucht:"
+msgstr "The update needs root rights:"
+
+#: usbshare/cli.py:30
+#. Platzhalter / placeholders: {client}
+msgid "benutzt von {client}"
+msgstr "used by {client}"
+
+#: usbshare/cli.py:300
+#. Platzhalter / placeholders: {v}
+msgid "Auf {v} aktualisieren? [J/n] "
+msgstr "Update to {v}? [Y/n] "
+
+#: usbshare/cli.py:302
+msgid "Abgebrochen."
+msgstr "Cancelled."
+
+#: usbshare/cli.py:305
+msgid "Keine Eingabe möglich – mit --yes bestätigen."
+msgstr "No input possible – confirm with --yes."
+
+#: usbshare/cli.py:314
+#. Platzhalter / placeholders: {pct}
+msgid "Lade herunter … {pct} %"
+msgstr "Downloading … {pct} %"
+
+#: usbshare/cli.py:317
+msgid "Download geprüft (SHA-256 stimmt)."
+msgstr "Download verified (SHA-256 matches)."
+
+#: usbshare/cli.py:345
+msgid "Dienst-Datei aktualisiert."
+msgstr "Service file updated."
+
+#: usbshare/cli.py:358
+msgid "USB-Geräte über das Netzwerk freigeben (USB/IP-kompatibel)"
+msgstr "Share USB devices over the network (USB/IP compatible)"
+
+#: usbshare/cli.py:364
+msgid "Server starten (auf dem Rechner mit den USB-Geräten)"
+msgstr "start the server (on the machine with the USB devices)"
+
+#: usbshare/cli.py:365
+msgid "Bind-Adresse (Standard 0.0.0.0, '::' für IPv6)"
+msgstr "Bind address (default 0.0.0.0, '::' for IPv6)"
+
+#: usbshare/cli.py:366
+#. Platzhalter / placeholders: {port}
+msgid "TCP-Port (Standard {port})"
+msgstr "TCP port (default {port})"
+
+#: usbshare/cli.py:368
+msgid "nur diese Geräte freigeben (mehrfach, '046d:*' erlaubt)"
+msgstr "share only these devices (repeatable, '046d:*' allowed)"
+
+#: usbshare/cli.py:370
+msgid "diese Geräte nie freigeben (z. B. eigene Tastatur)"
+msgstr "never share these devices (e.g. your own keyboard)"
+
+#: usbshare/cli.py:372
+msgid "nur Clients aus diesen Netzen zulassen, z. B. 192.168.1.50/32"
+msgstr "only allow clients from these networks, e.g. 192.168.1.50/32"
+
+#: usbshare/cli.py:373
+msgid "GERÄT"
+msgstr "DEVICE"
+
+#: usbshare/cli.py:374
+msgid "Gerät nur bestimmten Clients anbieten, z. B. 046d:c52b=192.168.1.50"
+msgstr "offer a device only to certain clients, e.g. 046d:c52b=192.168.1.50"
+
+#: usbshare/cli.py:376
+msgid "Windows: UsbDk statt WinUSB verwenden (kein Zadig nötig)"
+msgstr "Windows: use UsbDk instead of WinUSB (no Zadig needed)"
+
+#: usbshare/cli.py:377
+msgid "TOML-Konfigurationsdatei (wird angelegt, falls nicht vorhanden)"
+msgstr "TOML configuration file (created if it does not exist)"
+
+#: usbshare/cli.py:379
+msgid "Puffer für Audio-Wiedergabe in ms (Standard 40, 0 = aus)"
+msgstr "buffer for audio playback in ms (default 40, 0 = off)"
+
+#: usbshare/cli.py:381
+msgid "Geräte beim Verbinden/Trennen nicht zurücksetzen"
+msgstr "do not reset devices when connecting/disconnecting"
+
+#: usbshare/cli.py:383
+msgid "nicht auf die automatische Serversuche der Clients antworten"
+msgstr "do not answer the clients' automatic server search"
+
+#: usbshare/cli.py:386
+msgid "lokale USB-Geräte anzeigen"
+msgstr "show local USB devices"
+
+#: usbshare/cli.py:390
+msgid "verfügbare Geräte eines Servers anzeigen"
+msgstr "show the available devices of a server"
+
+#: usbshare/cli.py:395
+msgid "Server-Fenster öffnen (Geräte freigeben und zuweisen)"
+msgstr "open the server window (share and assign devices)"
+
+#: usbshare/cli.py:399
+msgid "auf die neueste Version aktualisieren"
+msgstr "update to the latest version"
+
+#: usbshare/cli.py:40
+#. Platzhalter / placeholders: {value}
+msgid "--assign erwartet GERÄT=CLIENT[,CLIENT], nicht {value}"
+msgstr "--assign expects DEVICE=CLIENT[,CLIENT], not {value}"
+
+#: usbshare/cli.py:400
+msgid "nur prüfen, ob es ein Update gibt"
+msgstr "only check whether an update is available"
+
+#: usbshare/cli.py:401
+msgid "ohne Rückfrage installieren"
+msgstr "install without asking"
+
+#: usbshare/cli.py:402
+msgid "auch installieren, wenn schon aktuell"
+msgstr "install even if already up to date"
+
+#: usbshare/cli.py:406
+msgid "belegtes Gerät vom Client lösen (auf dem Server-Rechner)"
+msgstr "release a device in use from its client (on the server machine)"
+
+#: usbshare/cli.py:408
+msgid "Standard: dieser Rechner"
+msgstr "default: this machine"
+
+#: usbshare/cli.py:85
+#. Platzhalter / placeholders: {error}, {file}
+msgid "Konnte {file} nicht anlegen: {error}"
+msgstr "Could not create {file}: {error}"
+
+#: usbshare/cli.py:98
+#. Platzhalter / placeholders: {error}, {port}
+msgid ""
+"Fehler: Port {port} kann nicht geöffnet werden ({error}). Läuft usbshare schon?"
+msgstr ""
+"Error: port {port} cannot be opened ({error}). Is usbshare already running?"
+
+#: usbshare/config.py:101
+msgid ""
+"Nur Windows: UsbDk statt WinUSB/Zadig verwenden (UsbDk muss installiert sein)"
+msgstr ""
+"Windows only: use UsbDk instead of WinUSB/Zadig (UsbDk must be installed)"
+
+#: usbshare/config.py:104
+msgid ""
+"Auf die automatische Serversuche der Clients antworten (UDP-Port wie TCP-Port).\n"
+"Es wird nur Clients geantwortet, die laut allow_clients zugelassen sind."
+msgstr ""
+"Answer the clients' automatic server search (UDP port same as TCP port).\n"
+"Only clients allowed by allow_clients get an answer."
+
+#: usbshare/config.py:108
+msgid ""
+"Gerät beim Verbinden und Trennen zurücksetzen (USB-Reset), damit der Client es in einem\n"
+"sauberen Zustand bekommt. Nötig z. B. für Logitech-Unifying/Bolt-Empfänger an Linux.\n"
+"Nur ausschalten, wenn ein Gerät den Reset nicht verträgt (Änderung erst nach Neustart)."
+msgstr ""
+"Reset the device when connecting and disconnecting (USB reset), so the client gets it in a\n"
+"clean state. Needed e.g. for Logitech Unifying/Bolt receivers on Linux.\n"
+"Only turn off if a device does not tolerate the reset (takes effect after a restart)."
+
+#: usbshare/config.py:113
+msgid ""
+"Puffer für Audio-Wiedergabe (z. B. Headsets) in Millisekunden. Hält den Audio-Strom zum\n"
+"Gerät lückenlos, auch wenn Daten über das Netzwerk verspätet ankommen; Lücken werden mit\n"
+"Stille gefüllt. Größer = robuster bei WLAN, aber mehr Verzögerung. 0 = aus.\n"
+"(Änderung erst nach Neustart des Dienstes.)"
+msgstr ""
+"Buffer for audio playback (e.g. headsets) in milliseconds. Keeps the audio stream to the\n"
+"device continuous even when data arrives late over the network; gaps are filled with\n"
+"silence. Larger = more robust on Wi-Fi, but more delay. 0 = off.\n"
+"(Takes effect after restarting the service.)"
+
+#: usbshare/config.py:119
+msgid ""
+"Geräte fest bestimmten Clients zuweisen: Ein zugewiesenes Gerät wird nur diesen\n"
+"Clients angeboten, andere sehen es als \"Reserviert\".\n"
+"Links: Gerät (vid:pid, vid:* oder Bus-ID), rechts: IP(s) bzw. Netz(e) der Clients.\n"
+"Beispiel: \"046d:c52b\" = [\"192.168.1.50\"]"
+msgstr ""
+"Assign devices to certain clients: an assigned device is offered only to these\n"
+"clients, others see it as \"Reserved\".\n"
+"Left: device (vid:pid, vid:* or bus ID), right: IP(s) or network(s) of the clients.\n"
+"Example: \"046d:c52b\" = [\"192.168.1.50\"]"
+
+#: usbshare/config.py:129
+msgid ""
+"Der Server wurde ohne --config gestartet; Änderungen werden nicht gespeichert"
+msgstr "The server was started without --config; changes are not saved"
+
+#: usbshare/config.py:82
+msgid ""
+"usbshare Server-Konfiguration\n"
+"Wird auch vom usbshare Server-Fenster geschrieben. Änderungen von Hand werden\n"
+"nach wenigen Sekunden automatisch übernommen (Adresse/Port/UsbDk erst nach Neustart)."
+msgstr ""
+"usbshare server configuration\n"
+"Also written by the usbshare server window. Changes made by hand are\n"
+"applied automatically after a few seconds (address/port/UsbDk only after a restart)."
+
+#: usbshare/config.py:90
+msgid ""
+"Welche Rechner/VMs sich überhaupt verbinden dürfen. Leer = alle im Netz.\n"
+"Beispiel: [\"192.168.1.50\", \"192.168.1.0/24\"]"
+msgstr ""
+"Which computers/VMs may connect at all. Empty = everyone on the network.\n"
+"Example: [\"192.168.1.50\", \"192.168.1.0/24\"]"
+
+#: usbshare/config.py:94
+msgid ""
+"Nur diese Geräte freigeben. Leer = alle (außer \"exclude\").\n"
+"Format: \"vid:pid\", \"vid:*\" oder Bus-ID wie \"1-4\". Werte zeigt \"usbshare list\"."
+msgstr ""
+"Share only these devices. Empty = all (except \"exclude\").\n"
+"Format: \"vid:pid\", \"vid:*\" or bus ID like \"1-4\". \"usbshare list\" shows the values."
+
+#: usbshare/config.py:98
+msgid "Diese Geräte nie freigeben, z. B. eigene Tastatur und Maus."
+msgstr "Never share these devices, e.g. your own keyboard and mouse."
+
+#: usbshare/driver.py:129
+msgid ""
+"Das mitgelieferte usbip-win2-Installationsprogramm ist beschädigt – bitte das Client-Paket neu herunterladen."
+msgstr ""
+"The bundled usbip-win2 installer is damaged – please download the client package again."
+
+#: usbshare/driver.py:146
+#. Platzhalter / placeholders: {error}
+msgid "Installationsprogramm konnte nicht gestartet werden: {error}"
+msgstr "The installer could not be started: {error}"
+
+#: usbshare/driver.py:150
+#. Platzhalter / placeholders: {code}, {log}
+msgid "Das Setup von usbip-win2 endete mit Code {code}. Protokoll: {log}"
+msgstr "The usbip-win2 setup ended with code {code}. Log: {log}"
+
+#: usbshare/gui.py:101 usbshare/server_gui.py:75
+msgid "Abbrechen"
+msgstr "Cancel"
+
+#: usbshare/gui.py:102 usbshare/server_gui.py:76
+msgid "Speichern"
+msgstr "Save"
+
+#: usbshare/gui.py:110
+msgid "Adresse fehlt"
+msgstr "Address missing"
+
+#: usbshare/gui.py:110
+msgid "Bitte die IP-Adresse oder den Hostnamen des Servers eingeben."
+msgstr "Please enter the IP address or host name of the server."
+
+#: usbshare/gui.py:117
+msgid "Ungültige Adresse"
+msgstr "Invalid address"
+
+#: usbshare/gui.py:117
+#. Platzhalter / placeholders: {addr}
+msgid "„{addr}“ ist keine gültige Adresse."
+msgstr "“{addr}” is not a valid address."
+
+#: usbshare/gui.py:127 usbshare/gui.py:250
+msgid "Server suchen"
+msgstr "Find servers"
+
+#: usbshare/gui.py:131
+msgid "Server im Netzwerk"
+msgstr "Servers on the network"
+
+#: usbshare/gui.py:132
+msgid "Suche …"
+msgstr "Searching …"
+
+#: usbshare/gui.py:136 usbshare/gui.py:306 usbshare/gui.py:90 usbshare/server_gui.py:229
+msgid "Name"
+msgstr "Name"
+
+#: usbshare/gui.py:136 usbshare/gui.py:93
+msgid "Adresse"
+msgstr "Address"
+
+#: usbshare/gui.py:141
+msgid ""
+"Es antworten nur Server im selben Netzwerk, die diesen PC zulassen. Nicht gefunden? Dann über „Server hinzufügen …“ die IP von Hand eintragen."
+msgstr ""
+"Only servers on the same network that allow this PC answer. Not found? Enter the IP by hand with “Add server …”."
+
+#: usbshare/gui.py:146
+msgid "Erneut suchen"
+msgstr "Search again"
+
+#: usbshare/gui.py:148 usbshare/gui.py:212 usbshare/update_ui.py:154 usbshare/update_ui.py:284
+msgid "Schließen"
+msgstr "Close"
+
+#: usbshare/gui.py:149
+msgid "Hinzufügen"
+msgstr "Add"
+
+#: usbshare/gui.py:156
+msgid "Suche im Netzwerk …"
+msgstr "Searching the network …"
+
+#: usbshare/gui.py:180
+msgid "bereits eingetragen"
+msgstr "already added"
+
+#: usbshare/gui.py:184
+#. Platzhalter / placeholders: {n}
+msgid "{n} Server gefunden"
+msgstr "{n} server(s) found"
+
+#: usbshare/gui.py:184
+msgid "Kein Server gefunden"
+msgstr "No server found"
+
+#: usbshare/gui.py:198 usbshare/gui.py:200 usbshare/gui.py:368
+msgid "Meldungen"
+msgstr "Messages"
+
+#: usbshare/gui.py:209
+msgid "Noch keine Meldungen."
+msgstr "No messages yet."
+
+#: usbshare/gui.py:236
+msgid "usbshare Client öffnen"
+msgstr "Open usbshare Client"
+
+#: usbshare/gui.py:258 usbshare/gui.py:237 usbshare/update_ui.py:156
+msgid "Jetzt aktualisieren"
+msgstr "Refresh now"
+
+#: usbshare/gui.py:259
+msgid "Meldungen anzeigen …"
+msgstr "Show messages …"
+
+#: usbshare/gui.py:26
+msgid "Verbunden"
+msgstr "Connected"
+
+#: usbshare/gui.py:261
+msgid "Mit Windows starten (im Infobereich)"
+msgstr "Start with Windows (in the notification area)"
+
+#: usbshare/gui.py:264
+msgid "Beim Schließen im Infobereich weiterlaufen"
+msgstr "Keep running in the notification area when closed"
+
+#: usbshare/gui.py:268 usbshare/server_gui.py:155
+msgid "Nach Updates suchen …"
+msgstr "Check for updates …"
+
+#: usbshare/gui.py:269
+msgid "usbip-win2 installieren / aktualisieren …"
+msgstr "Install / update usbip-win2 …"
+
+#: usbshare/gui.py:27 usbshare/server_gui.py:317
+msgid "Frei"
+msgstr "Available"
+
+#: usbshare/gui.py:270 usbshare/server_gui.py:164
+#. Platzhalter / placeholders: {v}
+msgid "Über usbshare {v}"
+msgstr "About usbshare {v}"
+
+#: usbshare/gui.py:271
+msgid "USB-Geräte über das Netzwerk nutzen."
+msgstr "Use USB devices over the network."
+
+#: usbshare/gui.py:273 usbshare/server_gui.py:169
+msgid "Lizenz: GNU GPL v3 oder neuer – freie Software, ohne Gewährleistung."
+msgstr "License: GNU GPL v3 or later – free software, without warranty."
+
+#: usbshare/gui.py:274
+#. Platzhalter / placeholders: {path}
+msgid "Einstellungen: {path}"
+msgstr "Settings: {path}"
+
+#: usbshare/gui.py:276 usbshare/gui.py:239
+msgid "Beenden"
+msgstr "Quit"
+
+#: usbshare/gui.py:28
+#. Platzhalter / placeholders: {used_by}
+msgid "Belegt von {used_by}"
+msgstr "In use by {used_by}"
+
+#: usbshare/gui.py:284
+msgid ""
+"usbip-win2 ist nicht installiert – Geräte werden angezeigt, können aber nicht verbunden werden."
+msgstr ""
+"usbip-win2 is not installed – devices are shown but cannot be connected."
+
+#: usbshare/gui.py:286 usbshare/update_ui.py:324 usbshare/update_ui.py:286
+msgid "Installieren"
+msgstr "Install"
+
+#: usbshare/gui.py:29
+#. Platzhalter / placeholders: {assigned}
+msgid "Reserviert für {assigned}"
+msgstr "Reserved for {assigned}"
+
+#: usbshare/gui.py:30
+msgid "Server hat keinen Treiber"
+msgstr "Server has no driver"
+
+#: usbshare/gui.py:300
+msgid "Entfernen"
+msgstr "Remove"
+
+#: usbshare/gui.py:302
+msgid "Bearbeiten"
+msgstr "Edit"
+
+#: usbshare/gui.py:307 usbshare/gui.py:333 usbshare/server_gui.py:191
+msgid "Status"
+msgstr "Status"
+
+#: usbshare/gui.py:31
+msgid "Bitte warten"
+msgstr "Please wait"
+
+#: usbshare/gui.py:318
+msgid ""
+"☑ = Server wird verwendet (laufend abgefragt und automatisch verbunden). Anklicken schaltet um."
+msgstr ""
+"☑ = server is used (polled continuously and connected automatically). Click to toggle."
+
+#: usbshare/gui.py:326
+msgid "Geräte"
+msgstr "Devices"
+
+#: usbshare/gui.py:333 usbshare/libusb_backend.py:483 usbshare/server_gui.py:190
+msgid "Gerät"
+msgstr "Device"
+
+#: usbshare/gui.py:334 usbshare/gui.py:299
+msgid "Server"
+msgstr "Server"
+
+#: usbshare/gui.py:334
+msgid "Auto"
+msgstr "Auto"
+
+#: usbshare/gui.py:335 usbshare/server_gui.py:192
+msgid "Bus-ID"
+msgstr "Bus ID"
+
+#: usbshare/gui.py:353
+msgid "Verbinden"
+msgstr "Connect"
+
+#: usbshare/gui.py:355
+msgid "Trennen"
+msgstr "Disconnect"
+
+#: usbshare/gui.py:358
+msgid "Automatisch verbinden, sobald verfügbar"
+msgstr "Connect automatically when available"
+
+#: usbshare/gui.py:370
+msgid "Im Infobereich weiterlaufen"
+msgstr "Keep running in the notification area"
+
+#: usbshare/gui.py:372
+msgid "Mit Windows starten"
+msgstr "Start with Windows"
+
+#: usbshare/gui.py:412 usbshare/server_gui.py:337
+msgid "1 Gerät verbunden"
+msgstr "1 device connected"
+
+#: usbshare/gui.py:412 usbshare/server_gui.py:337
+#. Platzhalter / placeholders: {n}
+msgid "{n} Geräte verbunden"
+msgstr "{n} devices connected"
+
+#: usbshare/gui.py:414
+#. Platzhalter / placeholders: {n}
+msgid "{n} Server offline"
+msgstr "{n} server(s) offline"
+
+#: usbshare/gui.py:415
+msgid "Client"
+msgstr "Client"
+
+#: usbshare/gui.py:416
+#. Platzhalter / placeholders: {n}
+msgid "{n} Server online"
+msgstr "{n} server(s) online"
+
+#: usbshare/gui.py:422
+msgid "Alle Server"
+msgstr "All servers"
+
+#: usbshare/gui.py:422
+#. Platzhalter / placeholders: {n}
+msgid "{n} verwendet"
+msgstr "{n} in use"
+
+#: usbshare/gui.py:426
+msgid "aus"
+msgstr "off"
+
+#: usbshare/gui.py:460
+#. Platzhalter / placeholders: {name}
+msgid "{name}: wird abgefragt …"
+msgstr "{name}: querying …"
+
+#: usbshare/gui.py:463
+#. Platzhalter / placeholders: {address}, {name}
+msgid "{name} ({address}) ist nicht erreichbar."
+msgstr "{name} ({address}) cannot be reached."
+
+#: usbshare/gui.py:466
+#. Platzhalter / placeholders: {name}
+msgid ""
+"{name} ist ein Standard-USB/IP-Server: belegte Geräte und Namen werden nicht angezeigt."
+msgstr ""
+"{name} is a standard USB/IP server: devices in use and names are not shown."
+
+#: usbshare/gui.py:473
+msgid "andere Clients"
+msgstr "other clients"
+
+#: usbshare/gui.py:478
+msgid ""
+"Noch kein Server eingetragen – „Server suchen“ findet Server im Netzwerk."
+msgstr "No server added yet – “Find servers” finds servers on the network."
+
+#: usbshare/gui.py:479
+msgid "Kein Server ist auf „verwenden“ gestellt."
+msgstr "No server is set to “use”."
+
+#: usbshare/gui.py:481
+msgid "Zurzeit werden keine Geräte angeboten."
+msgstr "No devices are offered at the moment."
+
+#: usbshare/gui.py:492
+msgid "alle verwendeten Server"
+msgstr "all servers in use"
+
+#: usbshare/gui.py:568
+msgid "usbshare läuft weiter"
+msgstr "usbshare keeps running"
+
+#: usbshare/gui.py:569
+msgid ""
+"Der Client verbindet Geräte im Hintergrund. Öffnen und Beenden über das Symbol im Infobereich."
+msgstr ""
+"The client connects devices in the background. Open and quit via the icon in the notification area."
+
+#: usbshare/gui.py:573
+msgid "usbshare beenden?"
+msgstr "Quit usbshare?"
+
+#: usbshare/gui.py:574
+msgid ""
+"Für „Automatisch verbinden“ muss usbshare weiterlaufen.\n"
+"Stattdessen minimieren?"
+msgstr ""
+"usbshare must keep running for “Connect automatically”.\n"
+"Minimize instead?"
+
+#: usbshare/gui.py:596 usbshare/gui.py:252
+msgid "Server hinzufügen"
+msgstr "Add server"
+
+#: usbshare/gui.py:615
+msgid "Server bearbeiten"
+msgstr "Edit server"
+
+#: usbshare/gui.py:622
+msgid "Server entfernen"
+msgstr "Remove server"
+
+#: usbshare/gui.py:622
+#. Platzhalter / placeholders: {name}
+msgid ""
+"Server „{name}“ entfernen?\n"
+"Bereits verbundene Geräte bleiben verbunden."
+msgstr ""
+"Remove server “{name}”?\n"
+"Devices that are already connected stay connected."
+
+#: usbshare/gui.py:640
+msgid "Automatisch verbinden ist aktiv"
+msgstr "Connect automatically is active"
+
+#: usbshare/gui.py:641
+msgid ""
+"Für dieses Gerät ist „Automatisch verbinden“ eingeschaltet.\n"
+"Damit es nicht sofort wieder verbunden wird, wird das abgeschaltet. Fortfahren?"
+msgstr ""
+"“Connect automatically” is turned on for this device.\n"
+"It will be turned off so the device is not connected again right away. Continue?"
+
+#: usbshare/gui.py:663 usbshare/server_gui.py:508
+msgid "Autostart"
+msgstr "Autostart"
+
+#: usbshare/gui.py:663 usbshare/server_gui.py:508
+msgid "Autostart konnte nicht geändert werden."
+msgstr "Autostart could not be changed."
+
+#: usbshare/gui.py:95
+msgid "IP oder Hostname, optional mit :Port (Standard 3240)"
+msgstr "IP or host name, optionally with :port (default 3240)"
+
+#: usbshare/gui.py:97
+msgid "Diesen Server verwenden"
+msgstr "Use this server"
+
+#: usbshare/gui_model.py:103
+msgid "Audio"
+msgstr "Audio"
+
+#: usbshare/gui_model.py:103
+msgid "Kommunikation"
+msgstr "Communication"
+
+#: usbshare/gui_model.py:103
+msgid "Eingabegerät (HID)"
+msgstr "Input device (HID)"
+
+#: usbshare/gui_model.py:104
+msgid "Kamera/Scanner"
+msgstr "Camera/scanner"
+
+#: usbshare/gui_model.py:104
+msgid "Drucker"
+msgstr "Printer"
+
+#: usbshare/gui_model.py:104
+msgid "Massenspeicher"
+msgstr "Mass storage"
+
+#: usbshare/gui_model.py:104
+msgid "Hub"
+msgstr "Hub"
+
+#: usbshare/gui_model.py:105
+msgid "CDC-Daten"
+msgstr "CDC data"
+
+#: usbshare/gui_model.py:105
+msgid "Smartcard"
+msgstr "Smart card"
+
+#: usbshare/gui_model.py:105
+msgid "Video"
+msgstr "Video"
+
+#: usbshare/gui_model.py:106
+msgid "Funk/Bluetooth"
+msgstr "Wireless/Bluetooth"
+
+#: usbshare/gui_model.py:106
+msgid "Herstellerspezifisch"
+msgstr "Vendor-specific"
+
+#: usbshare/gui_model.py:108
+#. Platzhalter / placeholders: {kind}
+msgid "USB-Gerät ({kind})"
+msgstr "USB device ({kind})"
+
+#: usbshare/gui_model.py:108
+msgid "USB-Gerät"
+msgstr "USB device"
+
+#: usbshare/gui_model.py:195
+#. Platzhalter / placeholders: {name}
+msgid "Server {name} ist erreichbar"
+msgstr "Server {name} is reachable"
+
+#: usbshare/gui_model.py:196
+#. Platzhalter / placeholders: {error}, {name}
+msgid "Server {name} ist nicht erreichbar ({error})"
+msgstr "Server {name} cannot be reached ({error})"
+
+#: usbshare/gui_model.py:244
+msgid "usbip-win2 ist nicht installiert – Verbinden nicht möglich."
+msgstr "usbip-win2 is not installed – cannot connect."
+
+#: usbshare/gui_model.py:259
+#. Platzhalter / placeholders: {device}, {error}, {server}
+msgid "Verbinden von {device} ({server}) fehlgeschlagen: {error}"
+msgstr "Connecting {device} ({server}) failed: {error}"
+
+#: usbshare/gui_model.py:261 usbshare/update_ui.py:64 usbshare/update_ui.py:126
+#. Platzhalter / placeholders: {code}
+msgid "Fehlercode {code}"
+msgstr "Error code {code}"
+
+#: usbshare/gui_model.py:269
+#. Platzhalter / placeholders: {device}, {server}
+msgid "{device} von {server} automatisch verbunden"
+msgstr "{device} from {server} connected automatically"
+
+#: usbshare/gui_model.py:270
+#. Platzhalter / placeholders: {device}, {server}
+msgid "{device} von {server} verbunden"
+msgstr "{device} from {server} connected"
+
+#: usbshare/gui_model.py:275
+#. Platzhalter / placeholders: {error}
+msgid "Verbinden fehlgeschlagen: {error}"
+msgstr "Connecting failed: {error}"
+
+#: usbshare/gui_model.py:303 usbshare/gui_model.py:297
+#. Platzhalter / placeholders: {device}, {server}
+msgid "{device} von {server} getrennt"
+msgstr "{device} from {server} disconnected"
+
+#: usbshare/gui_model.py:306
+#. Platzhalter / placeholders: {busid}, {status}
+msgid "Trennen von {busid} fehlgeschlagen (Server-Status {status})"
+msgstr "Disconnecting {busid} failed (server status {status})"
+
+#: usbshare/gui_model.py:309
+#. Platzhalter / placeholders: {error}
+msgid "Trennen fehlgeschlagen: {error}"
+msgstr "Disconnecting failed: {error}"
+
+#: usbshare/iso_buffer.py:233
+#. Platzhalter / placeholders: {ms}, {n}, {packets}, {urbs}
+msgid ""
+"Puffer {ms} ms, {urbs} URBs, mit Stille aufgefüllt {n}× ({packets} Pakete)"
+msgstr ""
+"Buffer {ms} ms, {urbs} URBs, filled with silence {n}× ({packets} packets)"
+
+#: usbshare/iso_buffer.py:237
+#. Platzhalter / placeholders: {n}
+msgid "verworfen {n} Pakete"
+msgstr "dropped {n} packets"
+
+#: usbshare/iso_buffer.py:239
+#. Platzhalter / placeholders: {n}
+msgid "vom System abgebrochen und neu gestartet {n}×"
+msgstr "cancelled by the system and restarted {n}×"
+
+#: usbshare/iso_buffer.py:241
+msgid "Gerätefehler"
+msgstr "device errors"
+
+#: usbshare/libusb_backend.py:427
+msgid ""
+"%s: Übertragungsfehler auf Endpoint 0x%02x – wird wiederholt (bisher %d×)"
+msgstr "%s: transfer error on endpoint 0x%02x – retrying (so far %d×)"
+
+#: usbshare/libusb_backend.py:47
+msgid "nicht übertragen"
+msgstr "not transferred"
+
+#: usbshare/libusb_backend.py:47
+msgid "zu lang"
+msgstr "too long"
+
+#: usbshare/libusb_backend.py:484
+#. Platzhalter / placeholders: {request}, {target}
+msgid "Klassen-Anfrage {request} an {target}"
+msgstr "Class request {request} to {target}"
+
+#: usbshare/libusb_backend.py:486
+#. Platzhalter / placeholders: {code}
+msgid "Fehler {code}"
+msgstr "Error {code}"
+
+#: usbshare/libusb_backend.py:49
+msgid "abgebrochen"
+msgstr "cancelled"
+
+#: usbshare/libusb_backend.py:49
+msgid "Gerät weg"
+msgstr "device gone"
+
+#: usbshare/libusb_backend.py:514
+msgid ""
+"%s: Endpoint 0x%02x: Client sendet wieder Audio/Video-Daten (Pause %.1f s)"
+msgstr ""
+"%s: endpoint 0x%02x: client sends audio/video data again (pause %.1f s)"
+
+#: usbshare/libusb_backend.py:524
+msgid ""
+"%s: Endpoint 0x%02x: seit %.1f s keine Audio/Video-Daten mehr vom Client (Schnittstelle ist noch aktiv)"
+msgstr ""
+"%s: endpoint 0x%02x: no audio/video data from the client for %.1f s (interface still active)"
+
+#: usbshare/libusb_backend.py:541
+msgid "%s: Audio-Puffer für Endpoint 0x%02x aktiv (%.0f ms)"
+msgstr "%s: audio buffer for endpoint 0x%02x active (%.0f ms)"
+
+#: usbshare/libusb_backend.py:554
+msgid "%s: Audio-Puffer 0x%02x beendet – %s"
+msgstr "%s: audio buffer 0x%02x stopped – %s"
+
+#: usbshare/libusb_backend.py:583
+#. Platzhalter / placeholders: {n}, {urbs}
+msgid "{urbs} URBs, leergelaufen {n}×"
+msgstr "{urbs} URBs, ran dry {n}×"
+
+#: usbshare/libusb_backend.py:586
+#. Platzhalter / placeholders: {n}
+msgid "Paketfehler {n}"
+msgstr "packet errors {n}"
+
+#: usbshare/libusb_backend.py:590
+#. Platzhalter / placeholders: {n}
+msgid "nur Stille {n}×"
+msgstr "silence only {n}×"
+
+#: usbshare/libusb_backend.py:594 usbshare/libusb_backend.py:596
+msgid "keine"
+msgstr "none"
+
+#: usbshare/libusb_backend.py:600
+msgid "wiederholt"
+msgstr "retried"
+
+#: usbshare/libusb_backend.py:602
+#. Platzhalter / placeholders: {endpoints}, {errors}, {urbs}
+msgid "{urbs} URBs, Daten von Endpoints: {endpoints}, Fehler: {errors}"
+msgstr "{urbs} URBs, data from endpoints: {endpoints}, errors: {errors}"
+
+#: usbshare/libusb_backend.py:605
+#. Platzhalter / placeholders: {info}
+msgid "Audio-Puffer: {info}"
+msgstr "audio buffer: {info}"
+
+#: usbshare/libusb_backend.py:625
+#. Platzhalter / placeholders: {alt}, {iface}
+msgid "SET_INTERFACE Interface {iface} → Alternative {alt}"
+msgstr "SET_INTERFACE interface {iface} → alternate setting {alt}"
+
+#: usbshare/libusb_backend.py:635
+msgid ""
+"%s: CLEAR_HALT für Audio/Video-Endpoint 0x%02x ignoriert (bei isochronen Endpoints wirkungslos)"
+msgstr ""
+"%s: CLEAR_HALT for audio/video endpoint 0x%02x ignored (has no effect on isochronous endpoints)"
+
+#: usbshare/server.py:446
+msgid "Gerät nicht gefunden"
+msgstr "Device not found"
+
+#: usbshare/server.py:488
+#. Platzhalter / placeholders: {action}
+msgid "unbekannte Aktion {action}"
+msgstr "unknown action {action}"
+
+#: usbshare/server.py:490
+#. Platzhalter / placeholders: {error}
+msgid "Ungültige Adresse: {error}"
+msgstr "Invalid address: {error}"
+
+#: usbshare/server.py:492
+#. Platzhalter / placeholders: {error}
+msgid "Konfiguration konnte nicht gespeichert werden: {error}"
+msgstr "Could not save the configuration: {error}"
+
+#: usbshare/server.py:503
+msgid "nur auf dem Server-Rechner erlaubt"
+msgstr "only allowed on the server machine"
+
+#: usbshare/server.py:665
+msgid "%s: Client bricht Übertragungen ab (bisher %d×)"
+msgstr "%s: client cancels transfers (so far %d×)"
+
+#: usbshare/server_gui.py:146 usbshare/update_ui.py:134
+msgid "Nach Updates suchen"
+msgstr "Check for updates"
+
+#: usbshare/server_gui.py:153 usbshare/server_gui.py:224
+msgid "Zugelassene Clients …"
+msgstr "Allowed clients …"
+
+#: usbshare/server_gui.py:154
+msgid "Konfigurationsdatei öffnen"
+msgstr "Open configuration file"
+
+#: usbshare/server_gui.py:157
+msgid "Beim Anmelden im Infobereich starten"
+msgstr "Start in the notification area at login"
+
+#: usbshare/server_gui.py:160
+msgid "Beim Schließen im Infobereich bleiben"
+msgstr "Stay in the notification area when closed"
+
+#: usbshare/server_gui.py:166
+msgid ""
+"Dieses Fenster steuert den usbshare-Dienst. Der Dienst läuft auch weiter, wenn das Fenster geschlossen ist."
+msgstr ""
+"This window controls the usbshare service. The service keeps running when the window is closed."
+
+#: usbshare/server_gui.py:170
+msgid "Fenster beenden"
+msgstr "Close window"
+
+#: usbshare/server_gui.py:183
+msgid "USB-Geräte an diesem Rechner"
+msgstr "USB devices on this computer"
+
+#: usbshare/server_gui.py:184
+msgid "Gerät auswählen, dann freigeben und Clients festlegen (Doppelklick)"
+msgstr "Select a device, then share it and choose clients (double-click)"
+
+#: usbshare/server_gui.py:190
+msgid "Freigabe"
+msgstr "Share"
+
+#: usbshare/server_gui.py:191
+msgid "Zugriff für"
+msgstr "Access for"
+
+#: usbshare/server_gui.py:209
+msgid "Freigegeben"
+msgstr "Shared"
+
+#: usbshare/server_gui.py:212
+msgid "Clients festlegen …"
+msgstr "Choose clients …"
+
+#: usbshare/server_gui.py:214 usbshare/server_gui.py:419
+msgid "Vom Client trennen"
+msgstr "Disconnect from client"
+
+#: usbshare/server_gui.py:221
+msgid "Clients"
+msgstr "Clients"
+
+#: usbshare/server_gui.py:229
+msgid "IP-Adresse"
+msgstr "IP address"
+
+#: usbshare/server_gui.py:230
+msgid "Zugelassen"
+msgstr "Allowed"
+
+#: usbshare/server_gui.py:230
+msgid "Nutzt"
+msgstr "Uses"
+
+#: usbshare/server_gui.py:231
+msgid "Zuletzt gesehen"
+msgstr "Last seen"
+
+#: usbshare/server_gui.py:238
+msgid "usbshare Server öffnen"
+msgstr "Open usbshare Server"
+
+#: usbshare/server_gui.py:240
+msgid "Fenster beenden (Dienst läuft weiter)"
+msgstr "Close window (service keeps running)"
+
+#: usbshare/server_gui.py:271
+msgid "Fehler"
+msgstr "Error"
+
+#: usbshare/server_gui.py:287
+#. Platzhalter / placeholders: {port}
+msgid ""
+"Keine Verbindung zum usbshare-Dienst (Port {port}). Ist der Server installiert und gestartet?"
+msgstr ""
+"No connection to the usbshare service (port {port}). Is the server installed and running?"
+
+#: usbshare/server_gui.py:289
+msgid "Verbinde …"
+msgstr "Connecting …"
+
+#: usbshare/server_gui.py:291 usbshare/server_gui.py:286
+msgid "Dienst läuft nicht"
+msgstr "Service not running"
+
+#: usbshare/server_gui.py:293
+msgid "Server läuft"
+msgstr "Server running"
+
+#: usbshare/server_gui.py:294
+#. Platzhalter / placeholders: {port}
+msgid "Port {port}"
+msgstr "Port {port}"
+
+#: usbshare/server_gui.py:296
+msgid "ohne Konfigurationsdatei (Änderungen nur bis zum Neustart)"
+msgstr "without configuration file (changes only until restart)"
+
+#: usbshare/server_gui.py:298
+msgid "Konfiguration nicht beschreibbar!"
+msgstr "Configuration not writable!"
+
+#: usbshare/server_gui.py:300
+msgid "Serversuche aus"
+msgstr "server search off"
+
+#: usbshare/server_gui.py:307
+msgid "Alle Clients"
+msgstr "All clients"
+
+#: usbshare/server_gui.py:310
+msgid "Nicht freigegeben"
+msgstr "Not shared"
+
+#: usbshare/server_gui.py:312
+#. Platzhalter / placeholders: {client}
+msgid "Verbunden mit {client}"
+msgstr "Connected to {client}"
+
+#: usbshare/server_gui.py:315
+msgid "Kein Treiber (UsbDk/WinUSB)"
+msgstr "No driver (UsbDk/WinUSB)"
+
+#: usbshare/server_gui.py:327
+msgid "gerade eben"
+msgstr "just now"
+
+#: usbshare/server_gui.py:327
+#. Platzhalter / placeholders: {n}
+msgid "vor {n} min"
+msgstr "{n} min ago"
+
+#: usbshare/server_gui.py:328
+msgid "%d.%m. %H:%M"
+msgstr "%m/%d %H:%M"
+
+#: usbshare/server_gui.py:329
+msgid "ja"
+msgstr "yes"
+
+#: usbshare/server_gui.py:329
+msgid "nein"
+msgstr "no"
+
+#: usbshare/server_gui.py:333
+msgid "alle Clients im Netzwerk zugelassen"
+msgstr "all clients on the network allowed"
+
+#: usbshare/server_gui.py:334
+#. Platzhalter / placeholders: {clients}
+msgid "zugelassen: {clients}"
+msgstr "allowed: {clients}"
+
+#: usbshare/server_gui.py:359
+msgid "Gerät verbunden"
+msgstr "Device connected"
+
+#: usbshare/server_gui.py:359
+#. Platzhalter / placeholders: {client}, {device}
+msgid "{client} nutzt jetzt {device}"
+msgstr "{client} is now using {device}"
+
+#: usbshare/server_gui.py:362
+msgid "Gerät getrennt"
+msgstr "Device disconnected"
+
+#: usbshare/server_gui.py:362
+#. Platzhalter / placeholders: {device}
+msgid "{device} ist wieder frei"
+msgstr "{device} is available again"
+
+#: usbshare/server_gui.py:395
+msgid "Gerät wird benutzt"
+msgstr "Device in use"
+
+#: usbshare/server_gui.py:395
+#. Platzhalter / placeholders: {client}, {device}
+msgid ""
+"{device} wird gerade von {client} benutzt.\n"
+"Nicht mehr freigeben und dort trennen?"
+msgstr ""
+"{device} is currently used by {client}.\n"
+"Stop sharing it and disconnect it there?"
+
+#: usbshare/server_gui.py:409
+msgid "Clients festlegen"
+msgstr "Choose clients"
+
+#: usbshare/server_gui.py:410
+#. Platzhalter / placeholders: {device}, {vidpid}
+msgid "Welche Clients dürfen „{device}“ ({vidpid}) benutzen?"
+msgstr "Which clients may use “{device}” ({vidpid})?"
+
+#: usbshare/server_gui.py:412
+msgid "Alle zugelassenen Clients"
+msgstr "All allowed clients"
+
+#: usbshare/server_gui.py:419
+#. Platzhalter / placeholders: {client}, {device}
+msgid ""
+"{device} von {client} trennen?\n"
+"Für den Client sieht das aus, als würde das Gerät abgesteckt."
+msgstr ""
+"Disconnect {device} from {client}?\n"
+"For the client this looks as if the device was unplugged."
+
+#: usbshare/server_gui.py:430
+msgid "Zugelassene Clients"
+msgstr "Allowed clients"
+
+#: usbshare/server_gui.py:431
+msgid ""
+"Welche Rechner/VMs dürfen sich überhaupt mit diesem Server verbinden? Nicht zugelassene Clients finden den Server auch bei der Suche nicht."
+msgstr ""
+"Which computers/VMs may connect to this server at all? Clients that are not allowed do not find the server when searching either."
+
+#: usbshare/server_gui.py:433
+msgid "Alle Clients im Netzwerk"
+msgstr "All clients on the network"
+
+#: usbshare/server_gui.py:441 usbshare/server_gui.py:449
+msgid "Konfiguration"
+msgstr "Configuration"
+
+#: usbshare/server_gui.py:441
+msgid "Der Server läuft ohne Konfigurationsdatei."
+msgstr "The server runs without a configuration file."
+
+#: usbshare/server_gui.py:458
+msgid "Update installiert."
+msgstr "Update installed."
+
+#: usbshare/server_gui.py:500
+msgid ""
+"Das Fenster ist im Infobereich. Der Server-Dienst läuft unabhängig davon immer weiter."
+msgstr ""
+"The window is in the notification area. The server service always keeps running independently."
+
+#: usbshare/server_gui.py:52
+msgid "Nur diese Clients:"
+msgstr "Only these clients:"
+
+#: usbshare/server_gui.py:61
+msgid "(zurzeit abgelehnt)"
+msgstr "(currently refused)"
+
+#: usbshare/server_gui.py:67
+msgid "Noch hat sich kein Client gemeldet."
+msgstr "No client has connected yet."
+
+#: usbshare/server_gui.py:68
+msgid ""
+"Weitere IPs oder Netze, mit Komma getrennt (z. B. 192.168.1.60, 10.0.0.0/24)"
+msgstr ""
+"More IPs or networks, separated by commas (e.g. 192.168.1.60, 10.0.0.0/24)"
+
+#: usbshare/server_gui.py:93
+msgid "Kein Client gewählt"
+msgstr "No client selected"
+
+#: usbshare/server_gui.py:94
+msgid "Bitte mindestens einen Client auswählen oder eintragen."
+msgstr "Please select or enter at least one client."
+
+#: usbshare/ui_common.py:534
+msgid ""
+"Die Sprache wird nach einem Neustart des Programms umgestellt. Jetzt neu starten?"
+msgstr "The language changes after restarting the program. Restart now?"
+
+#: usbshare/ui_common.py:538
+msgid "Automatisch (Systemsprache)"
+msgstr "Automatic (system language)"
+
+#: usbshare/ui_common.py:544 usbshare/ui_common.py:534 usbshare/ui_common.py:530
+msgid "Sprache"
+msgstr "Language"
+
+#: usbshare/update_ui.py:107
+#. Platzhalter / placeholders: {folder}
+msgid "usbshare.exe fehlt in {folder}."
+msgstr "usbshare.exe is missing in {folder}."
+
+#: usbshare/update_ui.py:138
+#. Platzhalter / placeholders: {product}
+msgid "{product} – Updates"
+msgstr "{product} – updates"
+
+#: usbshare/update_ui.py:139
+msgid "Suche nach Updates …"
+msgstr "Checking for updates …"
+
+#: usbshare/update_ui.py:158
+msgid "Release-Seite öffnen"
+msgstr "Open release page"
+
+#: usbshare/update_ui.py:188
+#. Platzhalter / placeholders: {product}, {v}
+msgid "{product} ist aktuell (Version {v})."
+msgstr "{product} is up to date (version {v})."
+
+#: usbshare/update_ui.py:192
+#. Platzhalter / placeholders: {new}, {v}
+msgid "Neue Version {new} verfügbar – installiert ist {v}."
+msgstr "New version {new} available – installed is {v}."
+
+#: usbshare/update_ui.py:194
+msgid "Änderungen:"
+msgstr "Changes:"
+
+#: usbshare/update_ui.py:204
+msgid "Für die Installation fragt Windows nach Administratorrechten."
+msgstr "Windows asks for administrator rights for the installation."
+
+#: usbshare/update_ui.py:205
+msgid "Für die Installation fragt Linux nach deinem Passwort."
+msgstr "Linux asks for your password for the installation."
+
+#: usbshare/update_ui.py:216 usbshare/update_ui.py:338
+msgid "Lade herunter und prüfe …"
+msgstr "Downloading and verifying …"
+
+#: usbshare/update_ui.py:236 usbshare/update_ui.py:354
+#. Platzhalter / placeholders: {error}
+msgid "Unerwarteter Fehler: {error}"
+msgstr "Unexpected error: {error}"
+
+#: usbshare/update_ui.py:249
+#. Platzhalter / placeholders: {error}
+msgid "Update fehlgeschlagen: {error}"
+msgstr "Update failed: {error}"
+
+#: usbshare/update_ui.py:255
+#. Platzhalter / placeholders: {v}
+msgid "Version {v} installiert – starte neu …"
+msgstr "Version {v} installed – restarting …"
+
+#: usbshare/update_ui.py:274
+msgid "usbip-win2 – USB/IP-Treiber für Windows"
+msgstr "usbip-win2 – USB/IP driver for Windows"
+
+#: usbshare/update_ui.py:275
+msgid "Prüfe usbip-win2 …"
+msgstr "Checking usbip-win2 …"
+
+#: usbshare/update_ui.py:288
+msgid "Jetzt neu starten"
+msgstr "Restart now"
+
+#: usbshare/update_ui.py:290
+msgid "Projektseite öffnen"
+msgstr "Open project page"
+
+#: usbshare/update_ui.py:311
+msgid "usbip-win2 ist nicht installiert."
+msgstr "usbip-win2 is not installed."
+
+#: usbshare/update_ui.py:312
+#. Platzhalter / placeholders: {v}
+msgid "usbip-win2 {v} ist installiert."
+msgstr "usbip-win2 {v} is installed."
+
+#: usbshare/update_ui.py:313
+msgid "usbip-win2 ist installiert."
+msgstr "usbip-win2 is installed."
+
+#: usbshare/update_ui.py:316
+msgid ""
+"Kein Installationsprogramm gefunden und GitHub nicht erreichbar – bitte über die Projektseite installieren."
+msgstr ""
+"No installer found and GitHub not reachable – please install via the project page."
+
+#: usbshare/update_ui.py:319
+msgid "(GitHub nicht erreichbar – keine neuere Version geprüft.)"
+msgstr "(GitHub not reachable – no newer version checked.)"
+
+#: usbshare/update_ui.py:32
+msgid "Nur die installierte .exe kann sich selbst aktualisieren."
+msgstr "Only the installed .exe can update itself."
+
+#: usbshare/update_ui.py:321
+msgid "Das ist die aktuelle Version."
+msgstr "This is the latest version."
+
+#: usbshare/update_ui.py:324
+msgid "Aktualisieren"
+msgstr "Update"
+
+#: usbshare/update_ui.py:325
+msgid "im Paket enthalten"
+msgstr "included in the package"
+
+#: usbshare/update_ui.py:325
+msgid "von GitHub"
+msgstr "from GitHub"
+
+#: usbshare/update_ui.py:327
+#. Platzhalter / placeholders: {source}, {v}
+msgid "Verfügbar: Version {v} ({source})."
+msgstr "Available: version {v} ({source})."
+
+#: usbshare/update_ui.py:328
+msgid ""
+"Die Installation läuft ohne Rückfragen. Dabei werden alle USB-Geräte dieses Rechners kurz getrennt; danach muss Windows neu gestartet werden."
+msgstr ""
+"The installation runs without prompts. All USB devices of this computer are disconnected briefly; Windows must be restarted afterwards."
+
+#: usbshare/update_ui.py:339
+msgid "Prüfe Installationsprogramm …"
+msgstr "Checking installer …"
+
+#: usbshare/update_ui.py:360
+#. Platzhalter / placeholders: {v}
+msgid "Installiere usbip-win2 {v} … (USB-Geräte werden kurz getrennt)"
+msgstr "Installing usbip-win2 {v} … (USB devices are disconnected briefly)"
+
+#: usbshare/update_ui.py:368
+#. Platzhalter / placeholders: {error}
+msgid "Installation fehlgeschlagen: {error}"
+msgstr "Installation failed: {error}"
+
+#: usbshare/update_ui.py:376
+#. Platzhalter / placeholders: {v}
+msgid ""
+"usbip-win2 {v} ist installiert. Windows muss neu gestartet werden, damit der Treiber geladen wird."
+msgstr ""
+"usbip-win2 {v} is installed. Windows must be restarted to load the driver."
+
+#: usbshare/update_ui.py:379
+msgid "Später"
+msgstr "Later"
+
+#: usbshare/update_ui.py:55 usbshare/update_ui.py:104 usbshare/update_ui.py:200
+msgid "Aus dem Quellcode gestartet – bitte mit git aktualisieren."
+msgstr "Started from source – please update with git."
+
+#: usbshare/update_ui.py:58
+msgid "pkexec fehlt. Bitte im Terminal ausführen:"
+msgstr "pkexec is missing. Please run in a terminal:"
+
+#: usbshare/update_ui.py:62
+msgid "Abgebrochen (keine Berechtigung erteilt)."
+msgstr "Cancelled (no permission granted)."
+
+#: usbshare/update_ui.py:89
+msgid "Abgebrochen (keine Administratorrechte erteilt)."
+msgstr "Cancelled (no administrator rights granted)."
+
+#: usbshare/update_ui.py:90
+#. Platzhalter / placeholders: {code}, {program}
+msgid "Konnte {program} nicht starten (Fehler {code})."
+msgstr "Could not start {program} (error {code})."
+
+#: usbshare/updater.py:111
+#. Platzhalter / placeholders: {error}
+msgid "Keine Verbindung zu GitHub: {error}"
+msgstr "No connection to GitHub: {error}"
+
+#: usbshare/updater.py:118
+msgid "Ungültige Antwort von GitHub"
+msgstr "Invalid answer from GitHub"
+
+#: usbshare/updater.py:121
+msgid "Kein Release gefunden"
+msgstr "No release found"
+
+#: usbshare/updater.py:146
+msgid "Prüfsumme stimmt nicht – Download beschädigt, Update abgebrochen"
+msgstr "Checksum does not match – download damaged, update cancelled"
+
+#: usbshare/updater.py:155
+#. Platzhalter / placeholders: {kind}, {v}
+msgid "Das Release {v} enthält kein {kind}-Paket"
+msgstr "Release {v} contains no {kind} package"
+
+#: usbshare/updater.py:158
+msgid "Für das Paket gibt es keine Prüfsumme – Update abgebrochen"
+msgstr "There is no checksum for the package – update cancelled"
+
+#: usbshare/updater.py:163
+msgid "Das heruntergeladene Paket ist beschädigt"
+msgstr "The downloaded package is damaged"
+
+#: usbshare/updater.py:170
+#. Platzhalter / placeholders: {file}
+msgid "{file} fehlt im Paket"
+msgstr "{file} is missing in the package"

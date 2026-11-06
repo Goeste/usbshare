@@ -15,6 +15,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from . import __version__
 from . import protocol as P
+from .i18n import _
 from .backend import Backend, BackendError, DeviceSession
 from .config import ServerConfig
 from .protocol import DeviceInfo, IsoPacket, SubmitCmd, UrbResult
@@ -46,7 +47,7 @@ class DeviceFilter:
     def _match(rule: str, dev: DeviceInfo) -> bool:
         rule = rule.strip().lower()
         if ":" in rule:
-            vid, _, pid = rule.partition(":")
+            vid, _sep, pid = rule.partition(":")
             return (vid in ("*", f"{dev.id_vendor:04x}")
                     and pid in ("*", f"{dev.id_product:04x}"))
         return rule == dev.busid.lower()
@@ -442,7 +443,7 @@ class UsbIpServer:
         devs = self.backend.list_devices()
         dev = next((d for d in devs if d.busid == req.get("busid")), None)
         if action in ("share", "assign", "release") and dev is None:
-            return {"ok": False, "error": "Gerät nicht gefunden"}
+            return {"ok": False, "error": _("Gerät nicht gefunden")}
         try:
             if action == "share":
                 key = device_key(dev, devs)
@@ -484,11 +485,11 @@ class UsbIpServer:
             elif action == "release":
                 self.release(dev.busid)
             elif action != "status":
-                return {"ok": False, "error": f"unbekannte Aktion {action}"}
+                return {"ok": False, "error": _("unbekannte Aktion {action}", action=action)}
         except ValueError as e:
-            return {"ok": False, "error": f"Ungültige Adresse: {e}"}
+            return {"ok": False, "error": _("Ungültige Adresse: {error}", error=e)}
         except OSError as e:
-            return {"ok": False, "error": f"Konfiguration konnte nicht gespeichert werden: {e}",
+            return {"ok": False, "error": _("Konfiguration konnte nicht gespeichert werden: {error}", error=e),
                     "status": self.admin_status()}
         return {"ok": True, "status": self.admin_status()}
 
@@ -499,7 +500,7 @@ class UsbIpServer:
         req = json.loads(recv_exact(conn, n).decode() or "{}")
         if not is_loopback(peer):
             log.warning("%s: admin request refused (only allowed on the server itself)", peer)
-            reply, status = {"ok": False, "error": "nur auf dem Server-Rechner erlaubt"}, P.ST_NA
+            reply, status = {"ok": False, "error": _("nur auf dem Server-Rechner erlaubt")}, P.ST_NA
         else:
             reply, status = self.admin(req), P.ST_OK
         data = json.dumps(reply).encode()
@@ -661,7 +662,7 @@ class UrbPump:
     def _on_unlink(self, seqnum: int, target: int) -> None:
         self._unlinks += 1
         if self._unlinks in (1, 10, 100, 1000):
-            log.info("%s: Client bricht Übertragungen ab (bisher %d×)", self.peer, self._unlinks)
+            log.info(_("%s: Client bricht Übertragungen ab (bisher %d×)"), self.peer, self._unlinks)
         with self._lock:
             pending = target in self._pending
             if pending:

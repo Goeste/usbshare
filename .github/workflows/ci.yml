@@ -21,7 +21,9 @@ jobs:
       - name: Abhängigkeiten
         run: pip install libusb1 pyflakes
       - name: Lint
-        run: python -m pyflakes usbshare tests packaging build.py client_gui.py server_gui.py
+        run: python -m pyflakes usbshare tests packaging tools build.py client_gui.py server_gui.py
+      - name: Übersetzungen prüfen (Platzhalter, Vollständigkeit)
+        run: python tools/i18n.py check
       - name: Tests
         run: python -m unittest discover -s tests -t . -v
 

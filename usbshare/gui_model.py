@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple
 
 from . import protocol as P
+from .i18n import _
 from .client import find_usbip_tool, parse_server, remote_devlist_ext, remote_release
 from .server import DeviceFilter
 from .protocol import DeviceInfo
@@ -99,11 +100,12 @@ def _devinfo(dev: dict) -> DeviceInfo:
 def device_label(dev: dict) -> str:
     if dev.get("description") and not dev["description"].startswith("["):
         return dev["description"]
-    classes = {1: "Audio", 2: "Kommunikation", 3: "Eingabegerät (HID)", 6: "Kamera/Scanner",
-               7: "Drucker", 8: "Massenspeicher", 9: "Hub", 0x0A: "CDC-Daten",
-               0x0B: "Smartcard", 0x0E: "Video", 0xE0: "Funk/Bluetooth", 0xFF: "Herstellerspezifisch"}
+    classes = {1: _("Audio"), 2: _("Kommunikation"), 3: _("Eingabegerät (HID)"),
+               6: _("Kamera/Scanner"), 7: _("Drucker"), 8: _("Massenspeicher"), 9: _("Hub"),
+               0x0A: _("CDC-Daten"), 0x0B: _("Smartcard"), 0x0E: _("Video"),
+               0xE0: _("Funk/Bluetooth"), 0xFF: _("Herstellerspezifisch")}
     cls = dev.get("class") or next((i[0] for i in dev.get("interfaces", [])), None)
-    return f"USB-Gerät ({classes[cls]})" if cls in classes else "USB-Gerät"
+    return _("USB-Gerät ({kind})", kind=classes[cls]) if cls in classes else _("USB-Gerät")
 
 
 class Controller:
@@ -190,8 +192,8 @@ class Controller:
         with self._lock:
             prev = self.status.get(srv.id)
             if prev is None or prev.online != st.online:
-                self.say(f"Server {srv.name} " + ("ist erreichbar" if st.online else
-                                                  f"ist nicht erreichbar ({st.error})"),
+                self.say(_("Server {name} ist erreichbar", name=srv.name) if st.online else
+                         _("Server {name} ist nicht erreichbar ({error})", name=srv.name, error=st.error),
                          notify=prev is not None and prev.online is not None and srv.enabled)
             self.status[srv.id] = st
 
@@ -239,7 +241,7 @@ class Controller:
         if srv is None:
             return False
         if not self.usbip:
-            self.say("usbip-win2 ist nicht installiert – Verbinden nicht möglich.")
+            self.say(_("usbip-win2 ist nicht installiert – Verbinden nicht möglich."))
             return False
         key = (sid, busid)
         with self._lock:
@@ -254,8 +256,9 @@ class Controller:
             out = (r.stdout or "") + (r.stderr or "")
             if r.returncode != 0:
                 self._failed[key] = time.time()
-                self.say(f"Verbinden von {self.dev_name(sid, busid)} ({srv.name}) fehlgeschlagen: "
-                         f"{out.strip() or 'Fehlercode %d' % r.returncode}", notify=auto)
+                self.say(_("Verbinden von {device} ({server}) fehlgeschlagen: {error}",
+                           device=self.dev_name(sid, busid), server=srv.name,
+                           error=out.strip() or _("Fehlercode {code}", code=r.returncode)), notify=auto)
                 return False
             m = re.search(r"port\s+(\d+)", out, re.I)
             with self._lock:
@@ -263,12 +266,13 @@ class Controller:
                     self.settings.ports[f"{sid}/{busid}"] = int(m.group(1))
                     self.settings.save()
             self._failed.pop(key, None)
-            self.say(f"{self.dev_name(sid, busid)} von {srv.name} "
-                     f"{'automatisch ' if auto else ''}verbunden", notify=auto)
+            self.say((_("{device} von {server} automatisch verbunden") if auto else
+                      _("{device} von {server} verbunden")).format(device=self.dev_name(sid, busid),
+                                                                   server=srv.name), notify=auto)
             return True
         except (OSError, subprocess.SubprocessError) as e:
             self._failed[key] = time.time()
-            self.say(f"Verbinden fehlgeschlagen: {e}")
+            self.say(_("Verbinden fehlgeschlagen: {error}", error=e))
             return False
         finally:
             with self._lock:
@@ -290,17 +294,19 @@ class Controller:
             if port is not None and self.usbip:
                 r = self._exec(["detach", "-p", str(port)])
                 if r.returncode == 0:
-                    self.say(f"{self.dev_name(sid, busid)} von {srv.name} getrennt")
+                    self.say(_("{device} von {server} getrennt", device=self.dev_name(sid, busid),
+                               server=srv.name))
                     return True
             # Fallback: ask the server to drop the connection (the device gets unplugged here)
             status = remote_release(srv.host, srv.port, busid)
             if status == P.ST_OK:
-                self.say(f"{self.dev_name(sid, busid)} von {srv.name} getrennt")
+                self.say(_("{device} von {server} getrennt", device=self.dev_name(sid, busid),
+                           server=srv.name))
                 return True
-            self.say(f"Trennen von {busid} fehlgeschlagen (Server-Status {status})")
+            self.say(_("Trennen von {busid} fehlgeschlagen (Server-Status {status})", busid=busid, status=status))
             return False
         except (OSError, subprocess.SubprocessError) as e:
-            self.say(f"Trennen fehlgeschlagen: {e}")
+            self.say(_("Trennen fehlgeschlagen: {error}", error=e))
             return False
         finally:
             with self._lock:

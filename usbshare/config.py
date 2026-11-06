@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from . import protocol as P
+from .i18n import _
 
 
 def _toml_load(path: str) -> dict:
@@ -73,55 +74,59 @@ class ServerConfig:
         return os.access(target, os.W_OK)
 
     def render(self) -> str:
+        """The configuration file with explanations (comments in the program language)."""
+        def c(text: str) -> str:
+            return "\n".join("# " + ln if ln else "#" for ln in text.splitlines())
         assign = "\n".join(f"{_s(k)} = {_list(v)}" for k, v in sorted(self.assign.items()))
-        return f"""# usbshare Server-Konfiguration
-# Wird auch vom usbshare Server-Fenster geschrieben. Änderungen von Hand werden
-# nach wenigen Sekunden automatisch übernommen (Adresse/Port/UsbDk erst nach Neustart).
-
-[server]
-host = {_s(self.host)}
-port = {self.port}
-
-# Welche Rechner/VMs sich überhaupt verbinden dürfen. Leer = alle im Netz.
-# Beispiel: ["192.168.1.50", "192.168.1.0/24"]
-allow_clients = {_list(self.allow_clients)}
-
-# Nur diese Geräte freigeben. Leer = alle (außer "exclude").
-# Format: "vid:pid", "vid:*" oder Bus-ID wie "1-4". Werte zeigt "usbshare list".
-only = {_list(self.only)}
-
-# Diese Geräte nie freigeben, z. B. eigene Tastatur und Maus.
-exclude = {_list(self.exclude)}
-
-# Nur Windows: UsbDk statt WinUSB/Zadig verwenden (UsbDk muss installiert sein)
-usbdk = {str(self.usbdk).lower()}
-
-# Auf die automatische Serversuche der Clients antworten (UDP-Port wie TCP-Port).
-# Es wird nur Clients geantwortet, die laut allow_clients zugelassen sind.
-discovery = {str(self.discovery).lower()}
-
-# Gerät beim Verbinden und Trennen zurücksetzen (USB-Reset), damit der Client es in einem
-# sauberen Zustand bekommt. Nötig z. B. für Logitech-Unifying/Bolt-Empfänger an Linux.
-# Nur ausschalten, wenn ein Gerät den Reset nicht verträgt (Änderung erst nach Neustart).
-reset_on_attach = {str(self.reset_on_attach).lower()}
-
-# Puffer für Audio-Wiedergabe (z. B. Headsets) in Millisekunden. Hält den Audio-Strom zum
-# Gerät lückenlos, auch wenn Daten über das Netzwerk verspätet ankommen; Lücken werden mit
-# Stille gefüllt. Größer = robuster bei WLAN, aber mehr Verzögerung. 0 = aus.
-# (Änderung erst nach Neustart des Dienstes.)
-audio_buffer_ms = {self.audio_buffer_ms}
-
-# Geräte fest bestimmten Clients zuweisen: Ein zugewiesenes Gerät wird nur diesen
-# Clients angeboten, andere sehen es als "Reserviert".
-# Links: Gerät (vid:pid, vid:* oder Bus-ID), rechts: IP(s) bzw. Netz(e) der Clients.
-# Beispiel: "046d:c52b" = ["192.168.1.50"]
-[server.assign]
-{assign}
-"""
+        return "\n".join([
+            c(_("usbshare Server-Konfiguration\n"
+                "Wird auch vom usbshare Server-Fenster geschrieben. Änderungen von Hand werden\n"
+                "nach wenigen Sekunden automatisch übernommen (Adresse/Port/UsbDk erst nach Neustart).")),
+            "",
+            "[server]",
+            f"host = {_s(self.host)}",
+            f"port = {self.port}",
+            "",
+            c(_("Welche Rechner/VMs sich überhaupt verbinden dürfen. Leer = alle im Netz.\n"
+                "Beispiel: [\"192.168.1.50\", \"192.168.1.0/24\"]")),
+            f"allow_clients = {_list(self.allow_clients)}",
+            "",
+            c(_("Nur diese Geräte freigeben. Leer = alle (außer \"exclude\").\n"
+                "Format: \"vid:pid\", \"vid:*\" oder Bus-ID wie \"1-4\". Werte zeigt \"usbshare list\".")),
+            f"only = {_list(self.only)}",
+            "",
+            c(_("Diese Geräte nie freigeben, z. B. eigene Tastatur und Maus.")),
+            f"exclude = {_list(self.exclude)}",
+            "",
+            c(_("Nur Windows: UsbDk statt WinUSB/Zadig verwenden (UsbDk muss installiert sein)")),
+            f"usbdk = {str(self.usbdk).lower()}",
+            "",
+            c(_("Auf die automatische Serversuche der Clients antworten (UDP-Port wie TCP-Port).\n"
+                "Es wird nur Clients geantwortet, die laut allow_clients zugelassen sind.")),
+            f"discovery = {str(self.discovery).lower()}",
+            "",
+            c(_("Gerät beim Verbinden und Trennen zurücksetzen (USB-Reset), damit der Client es in einem\n"
+                "sauberen Zustand bekommt. Nötig z. B. für Logitech-Unifying/Bolt-Empfänger an Linux.\n"
+                "Nur ausschalten, wenn ein Gerät den Reset nicht verträgt (Änderung erst nach Neustart).")),
+            f"reset_on_attach = {str(self.reset_on_attach).lower()}",
+            "",
+            c(_("Puffer für Audio-Wiedergabe (z. B. Headsets) in Millisekunden. Hält den Audio-Strom zum\n"
+                "Gerät lückenlos, auch wenn Daten über das Netzwerk verspätet ankommen; Lücken werden mit\n"
+                "Stille gefüllt. Größer = robuster bei WLAN, aber mehr Verzögerung. 0 = aus.\n"
+                "(Änderung erst nach Neustart des Dienstes.)")),
+            f"audio_buffer_ms = {self.audio_buffer_ms}",
+            "",
+            c(_("Geräte fest bestimmten Clients zuweisen: Ein zugewiesenes Gerät wird nur diesen\n"
+                "Clients angeboten, andere sehen es als \"Reserviert\".\n"
+                "Links: Gerät (vid:pid, vid:* oder Bus-ID), rechts: IP(s) bzw. Netz(e) der Clients.\n"
+                "Beispiel: \"046d:c52b\" = [\"192.168.1.50\"]")),
+            "[server.assign]",
+            assign,
+            ""])
 
     def save(self) -> None:
         if not self.path:
-            raise OSError("server was started without --config; changes are not saved")
+            raise OSError(_("Der Server wurde ohne --config gestartet; Änderungen werden nicht gespeichert"))
         d = os.path.dirname(self.path)
         if d:
             os.makedirs(d, exist_ok=True)

@@ -6,6 +6,22 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+## [0.8.0] – 2026-11-06
+
+### Hinzugefügt
+- **Englisch.** Client, Server-Fenster, Kommandozeile, Meldungen und die Kommentare der
+  Konfigurationsdatei gibt es jetzt auf Deutsch und Englisch. Standard ist die Sprache von
+  Windows bzw. Linux (andere Sprachen → Englisch); umstellen im Menü **⋯ → Sprache**, das
+  Programm startet danach neu. Für Kommandozeile und Dienst: `USBSHARE_LANG=en|de`.
+- **Mitübersetzen:** Übersetzungen sind gettext-Dateien (`usbshare/locales/*.po`, z. B. mit
+  Poedit bearbeitbar); eine neue `.po`-Datei erscheint automatisch im Sprachmenü.
+  `tools/i18n.py` sammelt die Texte ein, legt neue Sprachen an und prüft Platzhalter.
+  Anleitung: `TRANSLATING.md`; Vorlage für Übersetzungs-Issues.
+
+### Geändert
+- Die Konfigurationsvorlage in den Server-Paketen hat englische Kommentare; schreibt der
+  Server die Datei neu (Änderung im Server-Fenster), nutzt er seine eigene Sprache.
+
 ## [0.7.2] – 2026-11-05
 
 ### Hinzugefügt
@@ -264,7 +280,8 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 - Control-, Bulk-, Interrupt- und isochrone Transfers, UNLINK.
 - Geräte- und Client-Filter, Autostart-Dateien, Linux-Client-Skript mit Auto-Attach.
 
-[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/Goeste/usbshare/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Goeste/usbshare/releases/tag/v0.8.0
 [0.7.2]: https://github.com/Goeste/usbshare/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Goeste/usbshare/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Goeste/usbshare/releases/tag/v0.7.0

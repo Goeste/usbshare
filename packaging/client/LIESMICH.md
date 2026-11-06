@@ -111,6 +111,8 @@ Schalter unten im Fenster (auch im Menü **⋯** oben rechts):
 
 Außerdem im Menü **⋯**:
 
+* **Sprache** – Deutsch, Englisch oder automatisch (Systemsprache); das Programm startet
+  danach neu.
 * **Meldungen anzeigen** – Verlauf aller Ereignisse.
 * **Nach Updates suchen …** – prüft auf GitHub, ob es eine neuere Version gibt, zeigt die
   Änderungen und installiert sie mit „Jetzt aktualisieren“ (Download wird per Prüfsumme

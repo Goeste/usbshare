@@ -34,4 +34,4 @@ usbshare = "usbshare.cli:main"
 packages = ["usbshare"]
 
 [tool.setuptools.package-data]
-usbshare = ["assets/*"]
+usbshare = ["assets/*", "locales/*.po"]

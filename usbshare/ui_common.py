@@ -253,7 +253,7 @@ class SingleInstance:
         def run():
             while True:
                 try:
-                    data, _ = self.sock.recvfrom(64)
+                    data, _addr = self.sock.recvfrom(64)
                 except OSError:
                     return
                 if data == b"show":
@@ -510,3 +510,53 @@ def set_run_key(name: str, command: Optional[str]) -> bool:
         return True
     except OSError:
         return False
+
+
+# -- language ------------------------------------------------------------------------------
+def add_language_menu(menu: tk.Menu, restart: Callable[[], None]) -> None:
+    """'Sprache / Language' submenu: Automatic + every available translation. A change is
+    saved and takes effect after a restart (offered right away)."""
+    from tkinter import messagebox
+    from . import i18n
+    from .i18n import _
+    sub = tk.Menu(menu, tearoff=False)
+    var = tk.StringVar(value=i18n.saved_choice())
+
+    def choose():
+        choice = var.get()
+        try:
+            i18n.save_choice(choice)
+        except OSError as e:
+            messagebox.showerror(_("Sprache"), str(e))
+            return
+        if i18n.resolve(choice) == i18n.language():
+            return
+        if messagebox.askyesno(_("Sprache"), _("Die Sprache wird nach einem Neustart des "
+                                               "Programms umgestellt. Jetzt neu starten?")):
+            restart()
+
+    sub.add_radiobutton(label=_("Automatisch (Systemsprache)"), value="auto", variable=var,
+                        command=choose)
+    sub.add_separator()
+    for code, name in i18n.available().items():
+        sub.add_radiobutton(label=name, value=code, variable=var, command=choose)
+    menu._lang_var = var                                     # keep the variable alive
+    label = _("Sprache")
+    menu.add_cascade(label=label if label == "Language" else f"{label} / Language", menu=sub)
+
+
+def restart_program(args: List[str]) -> None:
+    """Start this program again (a built .exe/binary or `python -m usbshare …`)."""
+    import subprocess
+    from .updater import clean_environment, frozen_executable
+    exe = frozen_executable()
+    if exe:
+        cmd = [exe]
+    elif sys.argv[0].endswith("__main__.py"):
+        cmd = [sys.executable, "-m", "usbshare"]
+    else:
+        cmd = [sys.executable, sys.argv[0]]
+    keep = [a for a in sys.argv[1:] if a not in ("--after-update", "--restarted", "--minimized")]
+    flags = 0x00000008 | 0x00000200 if IS_WIN else 0          # DETACHED | NEW_PROCESS_GROUP
+    subprocess.Popen(cmd + keep + args, close_fds=True, creationflags=flags,
+                     env=clean_environment(), start_new_session=not IS_WIN)

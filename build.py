@@ -38,7 +38,8 @@ UNUSED = ["unittest", "pydoc", "doctest", "pdb", "xmlrpc", "xml", "lzma", "bz2",
           "PIL", "pystray", "darkdetect"] + (["certifi"] if IS_WIN else [])
 EXCLUDE = [x for m in UNUSED for x in ("--exclude-module", m)]
 NO_TK = ["--exclude-module", "tkinter", "--exclude-module", "_tkinter", "--exclude-module", "sv_ttk"]
-COMMON = ["--onefile", "--clean", "--noupx"] + EXCLUDE
+LOCALES = ["--add-data", f"usbshare/locales{os.pathsep}usbshare/locales"]     # translations (*.po)
+COMMON = ["--onefile", "--clean", "--noupx"] + EXCLUDE + LOCALES
 UI = ["--collect-data", "sv_ttk", "--add-data", f"usbshare/assets{os.pathsep}usbshare/assets",
       "--hidden-import", "usbshare.update_ui", "--hidden-import", "usbshare.updater"]
 GUI_ONLY = ["--exclude-module", "usb1", "--exclude-module", "usbshare.libusb_backend",
