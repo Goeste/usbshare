@@ -2,7 +2,7 @@
 
 **USB-Geräte über das Netzwerk an eine VM oder einen anderen PC durchreichen** – eine freie
 Alternative zu VirtualHere. Der Server läuft auf dem Rechner, an dem die Geräte stecken
-(Linux oder Windows, experimentell macOS), der Client auf dem Windows-Rechner bzw. der VM,
+(Linux oder Windows; macOS experimentell, nur aus dem Quellcode), der Client auf dem Windows-Rechner bzw. der VM,
 die die Geräte nutzen soll.
 
 > **English:** usbshare passes USB devices over the network to a VM or another PC – a free
@@ -173,7 +173,7 @@ python packaging/make_packages.py --version 0.7.1 --bins dist --out out --usbip 
 
 **Releases per GitHub Actions:** Version in `usbshare/__init__.py` erhöhen, den Abschnitt in
 [CHANGELOG.md](CHANGELOG.md) ergänzen und auf `main` pushen – der Workflow „Build & Release“
-baut dann Linux, Windows und experimentell macOS, holt das aktuelle usbip-win2-Setup
+baut dann Linux und Windows, holt das aktuelle usbip-win2-Setup
 (Prüfsumme von GitHub), schnürt die Pakete und veröffentlicht das
 Release `v<version>` mit dem Changelog-Abschnitt. Alternativ einen Tag `v<version>` pushen.
 Über „Run workflow“ lässt sich der Build auch ohne Release starten.

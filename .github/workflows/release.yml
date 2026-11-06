@@ -70,27 +70,6 @@ jobs:
             dist/usbshare-client.exe
             dist/usbshare-server-gui.exe
 
-  macos:
-    # experimentell: Server für macOS (Apple Silicon), nicht Teil der Pakete
-    runs-on: macos-14
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: brew install libusb
-      - run: pip install pyinstaller libusb1 sv-ttk pillow
-      - name: Bauen
-        run: |
-          python build.py
-          mv dist/usbshare dist/usbshare-macos-arm64
-          dist/usbshare-macos-arm64 --version
-      - uses: actions/upload-artifact@v4
-        with:
-          name: bin-macos
-          path: dist/usbshare-macos-arm64
-
   package:
     needs: [linux, windows]
     runs-on: ubuntu-24.04

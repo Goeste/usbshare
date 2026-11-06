@@ -6,6 +6,10 @@ Alle nennenswerten Änderungen an usbshare. Format nach
 
 ## [Unreleased]
 
+### Geändert
+- Der experimentelle macOS-Build wurde aus dem Release-Ablauf entfernt (macOS weiterhin
+  aus dem Quellcode startbar).
+
 ## [0.8.0] – 2026-11-06
 
 ### Hinzugefügt
